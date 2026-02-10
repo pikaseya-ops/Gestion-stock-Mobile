@@ -130,6 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
         DB.forEach((cat, catIndex) => {
             const block = document.createElement('div');
             block.className = 'category-block';
+            block.id = `category-${cat.id}`;
             block.dataset.category = cat.id;
             block.style.animationDelay = `${catIndex * 0.05}s`;
 
@@ -145,10 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="threshold-badge" title="Modifier le seuil de stock faible">
                         <i class="fa-solid fa-triangle-exclamation"></i> Seuil : ${threshold}
                     </button>
-                </div>
-                <div class="category-actions">
-                    <button class="btn btn-sm btn-outline btn-add-item"><i class="fa-solid fa-plus"></i> Ajouter</button>
-                    <button class="btn btn-sm btn-ghost btn-delete-category"><i class="fa-solid fa-trash"></i></button>
                 </div>
             `;
 
@@ -186,24 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (e.key === 'Enter') saveThreshold();
                     if (e.key === 'Escape') loadData(); // Annuler
                 });
-            });
-
-            // Ajouter produit dans cette catégorie
-            header.querySelector('.btn-add-item').addEventListener('click', () => {
-                resetProductForm();
-                document.getElementById('product-category').value = cat.id;
-                openModal(modalAddProduct);
-            });
-
-            // Supprimer catégorie
-            header.querySelector('.btn-delete-category').addEventListener('click', () => {
-                openDeleteConfirm(
-                    `Supprimer la catégorie « ${cat.name} » et ses ${cat.products.length} produits ?`,
-                    async () => {
-                        await api(`/api/categories/${cat.id}`, { method: 'DELETE' });
-                        await loadData();
-                    }
-                );
             });
 
             // Product grid
@@ -387,6 +366,10 @@ document.addEventListener('DOMContentLoaded', () => {
             blocks.forEach(b => {
                 b.style.display = b.dataset.category === categoryId ? '' : 'none';
             });
+            const target = document.getElementById(`category-${categoryId}`);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
     }
 

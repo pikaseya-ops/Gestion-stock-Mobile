@@ -1,6 +1,6 @@
 import uuid
 from flask import Blueprint, request, jsonify
-from db import get_db
+from models import db, Category, Product
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -14,36 +14,27 @@ def _generate_id():
 # ──────────────────────────────────────────
 @api_bp.route('/data', methods=['GET'])
 def get_all_data():
-    conn = get_db()
-    categories = conn.execute(
-        "SELECT * FROM categories ORDER BY sort_order"
-    ).fetchall()
-
+    categories = Category.query.order_by(Category.sort_order).all()
     result = []
     for cat in categories:
-        products = conn.execute(
-            "SELECT * FROM products WHERE category_id = ? ORDER BY id",
-            (cat['id'],)
-        ).fetchall()
         result.append({
-            'id':       cat['id'],
-            'name':     cat['name'],
-            'icon':     cat['icon'],
-            'color':    cat['color'],
-            'low_stock_threshold': cat['low_stock_threshold'] if cat['low_stock_threshold'] is not None else 5,
+            'id': cat.id,
+            'name': cat.name,
+            'icon': cat.icon,
+            'color': cat.color,
+            'low_stock_threshold': cat.low_stock_threshold if cat.low_stock_threshold is not None else 5,
             'products': [
                 {
-                    'id':    p['id'],
-                    'name':  p['name'],
-                    'qty':   p['qty'],
-                    'unit':  p['unit'],
-                    'note':  p['note'] if p['note'] else None,
-                    'group': p['grp'] if p['grp'] else None,
+                    'id': p.id,
+                    'name': p.name,
+                    'qty': p.qty,
+                    'unit': p.unit,
+                    'note': p.note if p.note else None,
+                    'group': p.grp if p.grp else None,
                 }
-                for p in products
+                for p in sorted(cat.products, key=lambda x: x.id)
             ]
         })
-    conn.close()
     return jsonify(result)
 
 
@@ -53,8 +44,8 @@ def get_all_data():
 @api_bp.route('/categories', methods=['POST'])
 def create_category():
     data = request.get_json()
-    name  = data.get('name', '').strip()
-    icon  = data.get('icon', 'fa-solid fa-box').strip()
+    name = data.get('name', '').strip()
+    icon = data.get('icon', 'fa-solid fa-box').strip()
     color = data.get('color', 'conserves').strip()
 
     if not name:
@@ -63,14 +54,17 @@ def create_category():
     cat_id = name.lower().replace(' ', '-')
     cat_id = ''.join(c for c in cat_id if c.isalnum() or c == '-')
 
-    conn = get_db()
-    max_order = conn.execute("SELECT COALESCE(MAX(sort_order), -1) FROM categories").fetchone()[0]
-    conn.execute(
-        "INSERT INTO categories (id, name, icon, color, sort_order) VALUES (?, ?, ?, ?, ?)",
-        (cat_id, name, icon, color, max_order + 1)
+    last = Category.query.order_by(Category.sort_order.desc()).first()
+    next_order = (last.sort_order + 1) if last is not None else 0
+    cat = Category(
+        id=cat_id,
+        name=name,
+        icon=icon,
+        color=color,
+        sort_order=next_order,
     )
-    conn.commit()
-    conn.close()
+    db.session.add(cat)
+    db.session.commit()
     return jsonify({'id': cat_id, 'name': name, 'icon': icon, 'color': color, 'products': []}), 201
 
 
@@ -79,10 +73,8 @@ def create_category():
 # ──────────────────────────────────────────
 @api_bp.route('/categories/<cat_id>', methods=['DELETE'])
 def delete_category(cat_id):
-    conn = get_db()
-    conn.execute("DELETE FROM categories WHERE id = ?", (cat_id,))
-    conn.commit()
-    conn.close()
+    Category.query.filter_by(id=cat_id).delete()
+    db.session.commit()
     return jsonify({'success': True})
 
 
@@ -93,28 +85,31 @@ def delete_category(cat_id):
 def create_product():
     data = request.get_json()
     category_id = data.get('category_id', '').strip()
-    name        = data.get('name', '').strip()
-    qty         = data.get('qty')
-    unit        = data.get('unit', '').strip()
-    note        = data.get('note', '').strip()
-    grp         = data.get('group', '').strip()
+    name = data.get('name', '').strip()
+    qty = data.get('qty')
+    unit = data.get('unit', '').strip()
+    note = data.get('note', '').strip()
+    grp = data.get('group', '').strip()
 
     if not name or not category_id:
-        return jsonify({'error': 'Le nom et la cat\u00e9gorie sont requis'}), 400
+        return jsonify({'error': 'Le nom et la catégorie sont requis'}), 400
 
-    conn = get_db()
-    cat = conn.execute("SELECT id FROM categories WHERE id = ?", (category_id,)).fetchone()
+    cat = Category.query.get(category_id)
     if not cat:
-        conn.close()
-        return jsonify({'error': 'Cat\u00e9gorie introuvable'}), 404
+        return jsonify({'error': 'Catégorie introuvable'}), 404
 
     prod_id = _generate_id()
-    conn.execute(
-        "INSERT INTO products (id, category_id, name, qty, unit, note, grp) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (prod_id, category_id, name, qty, unit, note, grp)
+    product = Product(
+        id=prod_id,
+        category_id=category_id,
+        name=name,
+        qty=qty,
+        unit=unit or '',
+        note=note or '',
+        grp=grp or '',
     )
-    conn.commit()
-    conn.close()
+    db.session.add(product)
+    db.session.commit()
     return jsonify({
         'id': prod_id, 'name': name, 'qty': qty, 'unit': unit, 'note': note, 'group': grp
     }), 201
@@ -125,10 +120,8 @@ def create_product():
 # ──────────────────────────────────────────
 @api_bp.route('/products/<prod_id>', methods=['DELETE'])
 def delete_product(prod_id):
-    conn = get_db()
-    conn.execute("DELETE FROM products WHERE id = ?", (prod_id,))
-    conn.commit()
-    conn.close()
+    Product.query.filter_by(id=prod_id).delete()
+    db.session.commit()
     return jsonify({'success': True})
 
 
@@ -138,25 +131,20 @@ def delete_product(prod_id):
 @api_bp.route('/products/<prod_id>', methods=['PUT'])
 def update_product(prod_id):
     data = request.get_json()
-    conn = get_db()
-    existing = conn.execute("SELECT * FROM products WHERE id = ?", (prod_id,)).fetchone()
-    if not existing:
-        conn.close()
+    product = Product.query.get(prod_id)
+    if not product:
         return jsonify({'error': 'Produit introuvable'}), 404
 
-    name = data.get('name', existing['name']).strip()
-    qty  = data.get('qty', existing['qty'])
-    unit = data.get('unit', existing['unit']).strip()
-    note = data.get('note', existing['note']).strip()
-    grp  = data.get('group', existing['grp']).strip()
-
-    conn.execute(
-        "UPDATE products SET name=?, qty=?, unit=?, note=?, grp=? WHERE id=?",
-        (name, qty, unit, note, grp, prod_id)
-    )
-    conn.commit()
-    conn.close()
-    return jsonify({'id': prod_id, 'name': name, 'qty': qty, 'unit': unit, 'note': note, 'group': grp})
+    product.name = data.get('name', product.name).strip()
+    product.qty = data.get('qty', product.qty)
+    product.unit = data.get('unit', product.unit).strip()
+    product.note = data.get('note', product.note).strip()
+    product.grp = data.get('group', product.grp).strip()
+    db.session.commit()
+    return jsonify({
+        'id': prod_id, 'name': product.name, 'qty': product.qty,
+        'unit': product.unit, 'note': product.note, 'group': product.grp
+    })
 
 
 # ──────────────────────────────────────────
@@ -167,11 +155,9 @@ def update_threshold(cat_id):
     data = request.get_json()
     threshold = data.get('low_stock_threshold', 5)
 
-    conn = get_db()
-    conn.execute(
-        "UPDATE categories SET low_stock_threshold=? WHERE id=?",
-        (threshold, cat_id)
-    )
-    conn.commit()
-    conn.close()
+    cat = Category.query.get(cat_id)
+    if not cat:
+        return jsonify({'error': 'Catégorie introuvable'}), 404
+    cat.low_stock_threshold = threshold
+    db.session.commit()
     return jsonify({'success': True, 'low_stock_threshold': threshold})
