@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}StockAtelier — Tableau de bord{% endblock %}
+
+{% block content %}
+
+    <!-- ========== SIDEBAR ========== -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <img class="logo-icon" src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo">
+                <span class="logo-text">PoulStock</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav" id="sidebar-nav">
+            <a href="#" class="nav-item active" data-target="all">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>Tableau de bord</span>
+            </a>
+            <!-- Nav items générés dynamiquement -->
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-gear"></i>
+                <span>Paramètres</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="main-content">
+
+        <!-- Top bar -->
+        <header class="topbar">
+            <button id="sidebar-toggle" class="sidebar-toggle">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="topbar-left">
+                <h1 class="page-title">Tableau de bord</h1>
+                <p class="page-subtitle">Vue d'ensemble du stock de l'atelier</p>
+            </div>
+            <div class="topbar-right">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" placeholder="Rechercher un produit…" id="search-input">
+                </div>
+                <button class="btn-bell" id="btn-alerts" title="Stocks faibles">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="bell-badge" id="bell-badge">0</span>
+                </button>
+                <button class="btn btn-primary" id="btn-add-product">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Ajouter</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <section class="stats-grid" id="stats-grid"></section>
+
+        <!-- Categories -->
+        <section class="categories" id="categories-container"></section>
+
+        <!-- Add Category -->
+        <section class="add-category-section">
+            <button class="btn btn-dashed" id="btn-add-category">
+                <i class="fa-solid fa-folder-plus"></i>
+                <span>Ajouter une catégorie</span>
+            </button>
+        </section>
+
+    </main>
+
+    <!-- ========== PANNEAU LATÉRAL — À commander ========== -->
+    <div class="alerts-overlay" id="alerts-overlay"></div>
+    <aside class="alerts-panel" id="alerts-panel">
+        <div class="alerts-panel-header">
+            <h2><i class="fa-solid fa-cart-shopping"></i> À commander</h2>
+            <button class="btn-icon" id="alerts-panel-close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="alerts-panel-body" id="alerts-panel-body">
+            <!-- Contenu généré dynamiquement -->
+        </div>
+        <div class="alerts-panel-footer">
+            <button class="btn btn-sm btn-outline" id="btn-edit-thresholds">
+                <i class="fa-solid fa-sliders"></i> Régler les seuils
+            </button>
+        </div>
+    </aside>
+
+    <!-- ========== MODAL — Régler les seuils ========== -->
+    <div class="modal-overlay" id="modal-thresholds">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-sliders"></i> Seuils de stock faible</h2>
+                <button class="btn-icon modal-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" id="thresholds-body">
+                <!-- Généré dynamiquement -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost modal-close">Fermer</button>
+                <button class="btn btn-primary" id="btn-save-thresholds">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL — Add / Edit Product ========== -->
+    <div class="modal-overlay" id="modal-add-product">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modal-product-title"><i class="fa-solid fa-plus"></i> Ajouter un produit</h2>
+                <button class="btn-icon modal-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="product-name">Nom du produit</label>
+                    <input type="text" id="product-name" placeholder="Ex : Terrine volaille">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="product-qty">Quantité</label>
+                        <input type="number" id="product-qty" placeholder="Ex : 245">
+                    </div>
+                    <div class="form-group">
+                        <label for="product-unit">Unité</label>
+                        <input type="text" id="product-unit" placeholder="Ex : paires, rlx…">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="product-note">Note (optionnel)</label>
+                    <input type="text" id="product-note" placeholder="Ex : 2 à 5 kg">
+                </div>
+                <div class="form-group">
+                    <label for="product-category">Catégorie</label>
+                    <select id="product-category"></select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost modal-close">Annuler</button>
+                <button class="btn btn-primary" id="btn-confirm-add-product">Ajouter</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL — Add Category ========== -->
+    <div class="modal-overlay" id="modal-add-category-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-folder-plus"></i> Nouvelle catégorie</h2>
+                <button class="btn-icon modal-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="category-name">Nom de la catégorie</label>
+                    <input type="text" id="category-name" placeholder="Ex : Emballages">
+                </div>
+                <div class="form-group">
+                    <label for="category-icon">Icône Font Awesome</label>
+                    <input type="text" id="category-icon" placeholder="Ex : fa-solid fa-box">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost modal-close">Annuler</button>
+                <button class="btn btn-primary" id="btn-confirm-add-category">Créer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL — Confirm Delete ========== -->
+    <div class="modal-overlay" id="modal-confirm-delete">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-triangle-exclamation"></i> Confirmer</h2>
+                <button class="btn-icon modal-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <p id="delete-confirm-text">Êtes-vous sûr de vouloir supprimer cet élément ?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost modal-close">Annuler</button>
+                <button class="btn btn-danger" id="btn-confirm-delete">Supprimer</button>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

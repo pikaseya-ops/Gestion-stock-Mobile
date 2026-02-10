@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PoulStock — Gestion de stock</title>
+
+    <!-- Tailwind CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Google Fonts — Outfit + Nunito -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen">
+
+    <!-- ========== SIDEBAR ========== -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <img class="logo" src="Img/logo.png">
+                <span class="logo-text">PoulStock</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>Tableau de bord</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-egg"></i>
+                <span>Œufs</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-dove"></i>
+                <span>Volailles</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-wheat-awn"></i>
+                <span>Alimentation</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-toolbox"></i>
+                <span>Équipements</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-gear"></i>
+                <span>Paramètres</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="main-content">
+
+        <!-- Top bar -->
+        <header class="topbar">
+            <button id="sidebar-toggle" class="sidebar-toggle">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="topbar-left">
+                <h1 class="page-title">Tableau de bord</h1>
+                <p class="page-subtitle">Vue d'ensemble du stock de la ferme</p>
+            </div>
+            <div class="topbar-right">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" placeholder="Rechercher un produit…" id="search-input">
+                </div>
+                <button class="btn btn-primary" id="btn-add-product">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Ajouter</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <section class="stats-grid">
+            <div class="stat-card stat-card--eggs">
+                <div class="stat-icon">
+                    <i class="fa-solid fa-mitten"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">1 240</span>
+                    <span class="stat-label">Œufs en stock</span>
+                </div>
+                <span class="stat-badge up"><i class="fa-solid fa-arrow-up"></i> 12%</span>
+            </div>
+            <div class="stat-card stat-card--eggs">
+                <div class="stat-icon">
+                    <i class="fa-solid fa-egg"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">1 240</span>
+                    <span class="stat-label">Œufs en stock</span>
+                </div>
+                <span class="stat-badge up"><i class="fa-solid fa-arrow-up"></i> 12%</span>
+            </div>
+            <div class="stat-card stat-card--poultry">
+                <div class="stat-icon">
+                    <i class="fa-solid fa-dove"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">386</span>
+                    <span class="stat-label">Volailles</span>
+                </div>
+                <span class="stat-badge up"><i class="fa-solid fa-arrow-up"></i> 3%</span>
+            </div>
+            <div class="stat-card stat-card--feed">
+                <div class="stat-icon">
+                    <i class="fa-solid fa-wheat-awn"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">52 kg</span>
+                    <span class="stat-label">Alimentation</span>
+                </div>
+                <span class="stat-badge down"><i class="fa-solid fa-arrow-down"></i> 8%</span>
+            </div>
+            <div class="stat-card stat-card--equipment">
+                <div class="stat-icon">
+                    <i class="fa-solid fa-toolbox"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">27</span>
+                    <span class="stat-label">Équipements</span>
+                </div>
+                <span class="stat-badge neutral"><i class="fa-solid fa-minus"></i> 0%</span>
+            </div>
+        </section>
+
+        <!-- Category Sections -->
+        <section class="categories">
+
+            <!-- ŒUFS -->
+            <div class="category-block" data-category="oeufs">
+                <div class="category-header">
+                    <div class="category-title">
+                        <span class="category-dot dot--eggs"></span>
+                        <h2>Œufs</h2>
+                        <span class="category-count">6 produits</span>
+                    </div>
+                    <div class="category-actions">
+                        <button class="btn btn-sm btn-outline btn-add-item"><i class="fa-solid fa-plus"></i> Ajouter</button>
+                        <button class="btn btn-sm btn-ghost btn-delete-category"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="product-grid">
+                    <div class="product-card">
+                        <div class="product-card-header tag--eggs">
+                            <i class="fa-solid fa-egg"></i>
+                        </div>
+                        <div class="product-card-body">
+                            <h3>Œufs blancs (L)</h3>
+                            <p class="product-qty">320 unités</p>
+                            <p class="product-price">0,35 € / unité</p>
+                        </div>
+                        <div class="product-card-footer">
+                            <button class="btn-icon" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon btn-icon--danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="product-card">
+                        <div class="product-card-header tag--eggs">
+                            <i class="fa-solid fa-egg"></i>
+                        </div>
+                        <div class="product-card-body">
+                            <h3>Œufs bruns (M)</h3>
+                            <p class="product-qty">480 unités</p>
+                            <p class="product-price">0,30 € / unité</p>
+                        </div>
+                        <div class="product-card-footer">
+                            <button class="btn-icon" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon btn-icon--danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="product-card">
+                        <div class="product-card-header tag--eggs">
+                            <i class="fa-solid fa-egg"></i>
+                        </div>
+                        <div class="product-card-body">
+                            <h3>Œufs bio (XL)</h3>
+                            <p class="product-qty">200 unités</p>
+                            <p class="product-price">0,55 € / unité</p>
+                        </div>
+                        <div class="product-card-footer">
+                            <button class="btn-icon" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon btn-icon--danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="product-card">
+                        <div class="product-card-header tag--eggs">
+                            <i class="fa-solid fa-egg"></i>
+                        </div>
+                        <div class="product-card-body">
+                            <h3>Œufs bleus (Araucana)</h3>
+                            <p class="product-qty">85 unités</p>
+                            <p class="product-price">0,80 € / unité</p>
+                        </div>
+                        <div class="product-card-footer">
+                            <button class="btn-icon" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon btn-icon--danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="product-card">
+                        <div class="product-card-header tag--eggs">
+                            <i class="fa-solid fa-egg"></i>
+                        </div>
+                        <div class="product-card-body">
+                            <h3>Œufs crème (S)</h3>
+                            <p class="product-qty">95 unités</p>
+                            <p class="product-price">0,25 € / unité</p>
+                        </div>
+                        <div class="product-card-footer">
+                            <button class="btn-icon" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon btn-icon--danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="product-card">
+                        <div class="product-card-header tag--eggs">
+                            <i class="fa-solid fa-egg"></i>
+                        </div>
+                        <div class="product-card-body">
+                            <h3>Œufs fécondés</h3>
+                            <p class="product-qty">60 unités</p>
+                            <p class="product-price">1,20 € / unité</p>
+                        </div>
+                        <div class="product-card-footer">
+                            <button class="btn-icon" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon btn-icon--danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VOLAILLES -->
+            <div class="category-block" data-category="volailles">
+                <div class="category-header">
+                    <div class="category-title">
+                        <span class="category-dot dot--poultry"></span>
+                        <h2>Volailles</h2>
+                        <span class="category-count">4 produits</span>
+                    </div>
+                    <div class="category-actions">
+                        <button class="btn btn-sm btn-outline btn-add-item"><i class="fa-solid fa-plus"></i> Ajouter</button>
+                        <button class="btn btn-sm btn-ghost btn-delete-category"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="product-grid">
+                    <div class="product-card">
+                        <div class="product-card-header tag--poultry">
+                            <i class="fa-solid fa-dove"></i>
+                        </div>
+                        <div class="product-card-body">
+                            <h3>Poules pondeuses</h3>
+                            <p class="product-qty">220 têtes</p>
+                            <p class="product-price">15,00 € / unité</p>
+                        </div>
+                        <div class="product-card-footer">
+                            <button class="btn-icon" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon btn-icon--danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="product-card">
+                        <div class="product-card-header tag--poultry">
+                            <i class="fa-solid fa-dove"></i>
+                        </div>
+                        <div class="product-card-body">
+                            <h3>Coqs reproducteurs</h3>
+                            <p class="product-qty">18 têtes</p>
+                            <p class="product-price">25,00 € / unité</p>
+                        </div>
+                        <div class="product-card-footer">
+                            <button class="btn-icon" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon btn-icon--danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="product-card">
+                        <div class="product-card-header tag--poultry">
+                            <i class="fa-solid fa-dove"></i>
+                        </div>
+                        <div class="product-card-body">
+                            <h3>Poussins</h3>
+                            <p class="product-qty">120 têtes</p>
+                            <p class="product-price">3,50 € / unité</p>
+                        </div>
+                        <div class="product-card-footer">
+                            <button class="btn-icon" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon btn-icon--danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="product-card">
+                        <div class="product-card-header tag--poultry">
+                            <i class="fa-solid fa-dove"></i>
+                        </div>
+                        <div class="product-card-body">
+                            <h3>Poulettes (jeunes)</h3>
+                            <p class="product-qty">28 têtes</p>
+                            <p class="product-price">10,00 € / unité</p>
+                        </div>
+                        <div class="product-card-footer">
+                            <button class="btn-icon" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon btn-icon--danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ALIMENTATION -->
+            <div class="category-block" data-category="alimentation">
+                <div class="category-header">
+                    <div class="category-title">
+                        <span class="category-dot dot--feed"></span>
+                        <h2>Alimentation</h2>
+                        <span class="category-count">4 produits</span>
+                    </div>
+                    <div class="category-actions">
+                        <button class="btn btn-sm btn-outline btn-add-item"><i class="fa-solid fa-plus"></i> Ajouter</button>
+                        <button class="btn btn-sm btn-ghost btn-delete-category"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="product-grid">
+                    <div class="product-card">
+                        <div class="product-card-header tag--feed">
+                            <i class="fa-solid fa-wheat-awn"></i>
+                        </div>
+                        <div class="product-card-body">
+                            <h3>Mélange de grains</h3>
+                            <p class="product-qty">25 kg</p>
+                            <p class="product-price">18,90 € / sac</p>
+                        </div>
+                        <div class="product-card-footer">
+                            <button class="btn-icon" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon btn-icon--danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="product-card">
+                        <div class="product-card-header tag--feed">
+                            <i class="fa-solid fa-wheat-awn"></i>
+                        </div>
+                        <div class="product-card-body">
+                            <h3>Complément calcium</h3>
+                            <p class="product-qty">8 kg</p>
+                            <p class="product-price">12,50 € / sac</p>
+                        </div>
+                        <div class="product-card-footer">
+                            <button class="btn-icon" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon btn-icon--danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="product-card">
+                        <div class="product-card-header tag--feed">
+                            <i class="fa-solid fa-wheat-awn"></i>
+                        </div>
+                        <div class="product-card-body">
+                            <h3>Maïs concassé</h3>
+                            <p class="product-qty">15 kg</p>
+                            <p class="product-price">14,00 € / sac</p>
+                        </div>
+                        <div class="product-card-footer">
+                            <button class="btn-icon" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon btn-icon--danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="product-card">
+                        <div class="product-card-header tag--feed">
+                            <i class="fa-solid fa-wheat-awn"></i>
+                        </div>
+                        <div class="product-card-body">
+                            <h3>Vers de farine séchés</h3>
+                            <p class="product-qty">4 kg</p>
+                            <p class="product-price">22,00 € / sac</p>
+                        </div>
+                        <div class="product-card-footer">
+                            <button class="btn-icon" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon btn-icon--danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ÉQUIPEMENTS -->
+            <div class="category-block" data-category="equipements">
+                <div class="category-header">
+                    <div class="category-title">
+                        <span class="category-dot dot--equipment"></span>
+                        <h2>Équipements</h2>
+                        <span class="category-count">4 produits</span>
+                    </div>
+                    <div class="category-actions">
+                        <button class="btn btn-sm btn-outline btn-add-item"><i class="fa-solid fa-plus"></i> Ajouter</button>
+                        <button class="btn btn-sm btn-ghost btn-delete-category"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="product-grid">
+                    <div class="product-card">
+                        <div class="product-card-header tag--equipment">
+                            <i class="fa-solid fa-toolbox"></i>
+                        </div>
+                        <div class="product-card-body">
+                            <h3>Pondoirs (3 places)</h3>
+                            <p class="product-qty">12 unités</p>
+                            <p class="product-price">45,00 € / unité</p>
+                        </div>
+                        <div class="product-card-footer">
+                            <button class="btn-icon" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon btn-icon--danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="product-card">
+                        <div class="product-card-header tag--equipment">
+                            <i class="fa-solid fa-toolbox"></i>
+                        </div>
+                        <div class="product-card-body">
+                            <h3>Abreuvoirs automatiques</h3>
+                            <p class="product-qty">8 unités</p>
+                            <p class="product-price">32,00 € / unité</p>
+                        </div>
+                        <div class="product-card-footer">
+                            <button class="btn-icon" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon btn-icon--danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="product-card">
+                        <div class="product-card-header tag--equipment">
+                            <i class="fa-solid fa-toolbox"></i>
+                        </div>
+                        <div class="product-card-body">
+                            <h3>Mangeoires suspendues</h3>
+                            <p class="product-qty">5 unités</p>
+                            <p class="product-price">28,00 € / unité</p>
+                        </div>
+                        <div class="product-card-footer">
+                            <button class="btn-icon" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon btn-icon--danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="product-card">
+                        <div class="product-card-header tag--equipment">
+                            <i class="fa-solid fa-toolbox"></i>
+                        </div>
+                        <div class="product-card-body">
+                            <h3>Lampes chauffantes</h3>
+                            <p class="product-qty">2 unités</p>
+                            <p class="product-price">55,00 € / unité</p>
+                        </div>
+                        <div class="product-card-footer">
+                            <button class="btn-icon" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn-icon btn-icon--danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Add Category Button -->
+        <section class="add-category-section">
+            <button class="btn btn-dashed" id="btn-add-category">
+                <i class="fa-solid fa-folder-plus"></i>
+                <span>Ajouter une catégorie</span>
+            </button>
+        </section>
+
+    </main>
+
+    <!-- ========== MODAL — Add Product ========== -->
+    <div class="modal-overlay" id="modal-add-product">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-plus"></i> Ajouter un produit</h2>
+                <button class="btn-icon modal-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="product-name">Nom du produit</label>
+                    <input type="text" id="product-name" placeholder="Ex : Œufs bio (XL)">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="product-qty">Quantité</label>
+                        <input type="text" id="product-qty" placeholder="Ex : 200 unités">
+                    </div>
+                    <div class="form-group">
+                        <label for="product-price">Prix unitaire</label>
+                        <input type="text" id="product-price" placeholder="Ex : 0,55 €">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="product-category">Catégorie</label>
+                    <select id="product-category">
+                        <option value="oeufs">Œufs</option>
+                        <option value="volailles">Volailles</option>
+                        <option value="alimentation">Alimentation</option>
+                        <option value="equipements">Équipements</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost modal-close">Annuler</button>
+                <button class="btn btn-primary">Ajouter</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL — Add Category ========== -->
+    <div class="modal-overlay" id="modal-add-category">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-folder-plus"></i> Nouvelle catégorie</h2>
+                <button class="btn-icon modal-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="category-name">Nom de la catégorie</label>
+                    <input type="text" id="category-name" placeholder="Ex : Santé & Soins">
+                </div>
+                <div class="form-group">
+                    <label for="category-icon">Icône (classe Font Awesome)</label>
+                    <input type="text" id="category-icon" placeholder="Ex : fa-solid fa-heart-pulse">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost modal-close">Annuler</button>
+                <button class="btn btn-primary">Créer</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
