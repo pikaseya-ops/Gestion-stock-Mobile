@@ -131,13 +131,14 @@ def create_category():
     if not name:
         return jsonify({'error': 'Le nom est requis'}), 400
 
-    cat_id = name.lower().replace(' ', '-')
-    cat_id = ''.join(c for c in cat_id if c.isalnum() or c == '-')
+    # Vérifier si une catégorie avec ce nom existe déjà (insensible à la casse)
+    existing = Category.query.filter(db.func.lower(Category.name) == name.lower()).first()
+    if existing is not None:
+        return jsonify({'error': 'Une catégorie avec ce nom existe déjà.'}), 400
 
     last = Category.query.order_by(Category.sort_order.desc()).first()
     next_order = (last.sort_order + 1) if last is not None else 0
     cat = Category(
-        id=cat_id,
         name=name,
         icon=icon,
         color=color,
@@ -145,13 +146,13 @@ def create_category():
     )
     db.session.add(cat)
     db.session.commit()
-    return jsonify({'id': cat_id, 'name': name, 'icon': icon, 'color': color, 'products': []}), 201
+    return jsonify({'id': cat.id, 'name': name, 'icon': icon, 'color': color, 'products': []}), 201
 
 
 # ──────────────────────────────────────────
 # DELETE /api/categories/<id>
 # ──────────────────────────────────────────
-@api_bp.route('/categories/<cat_id>', methods=['DELETE'])
+@api_bp.route('/categories/<int:cat_id>', methods=['DELETE'])
 def delete_category(cat_id):
     Category.query.filter_by(id=cat_id).delete()
     db.session.commit()
@@ -164,24 +165,30 @@ def delete_category(cat_id):
 @api_bp.route('/products', methods=['POST'])
 def create_product():
     data = request.get_json()
-    category_id = data.get('category_id', '').strip()
+    category_id = data.get('category_id')
+    if category_id is not None and isinstance(category_id, str):
+        category_id = category_id.strip()
+    try:
+        category_id = int(category_id)
+    except (TypeError, ValueError):
+        category_id = None
     name = data.get('name', '').strip()
     qty = data.get('qty')
     unit = data.get('unit', '').strip()
     note = data.get('note', '').strip()
     grp = data.get('group', '').strip()
 
-    if not name or not category_id:
+    if not name or category_id is None:
         return jsonify({'error': 'Le nom et la catégorie sont requis'}), 400
 
-    cat = Category.query.get(category_id)
+    cat = Category.query.get(int(category_id))
     if not cat:
         return jsonify({'error': 'Catégorie introuvable'}), 404
 
     prod_id = _generate_id()
     product = Product(
         id=prod_id,
-        category_id=category_id,
+        category_id=int(category_id),
         name=name,
         qty=qty,
         unit=unit or '',
@@ -230,7 +237,7 @@ def update_product(prod_id):
 # ──────────────────────────────────────────
 # PUT /api/categories/<id>/threshold
 # ──────────────────────────────────────────
-@api_bp.route('/categories/<cat_id>/threshold', methods=['PUT'])
+@api_bp.route('/categories/<int:cat_id>/threshold', methods=['PUT'])
 def update_threshold(cat_id):
     data = request.get_json()
     threshold = data.get('low_stock_threshold', 5)

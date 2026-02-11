@@ -108,6 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
         addCategoryBtn.addEventListener('click', (e) => {
             e.preventDefault();
             if (window.innerWidth <= 768) sidebar.classList.remove('is-open');
+            const errEl = document.getElementById('category-modal-error');
+            if (errEl) errEl.style.display = 'none';
             openModal(modalAddCategory);
         });
         sidebarNav.appendChild(addCategoryBtn);
@@ -435,7 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
             blocks.forEach(b => b.style.display = '');
         } else {
             blocks.forEach(b => {
-                b.style.display = b.dataset.category === categoryId ? '' : 'none';
+                b.style.display = String(b.dataset.category) === String(categoryId) ? '' : 'none';
             });
             const target = document.getElementById(`category-${categoryId}`);
             if (target) {
@@ -580,20 +582,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Confirmer ajout catégorie
+    const categoryModalError = document.getElementById('category-modal-error');
+    const categoryModalErrorText = document.getElementById('category-modal-error-text');
+
     document.getElementById('btn-confirm-add-category')?.addEventListener('click', async () => {
         const name = document.getElementById('category-name').value.trim();
         const icon = document.getElementById('category-icon').value.trim() || 'fa-solid fa-box';
 
         if (!name) return;
 
-        await api('/api/categories', {
+        if (categoryModalError) categoryModalError.style.display = 'none';
+
+        const data = await api('/api/categories', {
             method: 'POST',
             body: { name, icon }
         });
 
+        if (data.error) {
+            if (categoryModalError && categoryModalErrorText) {
+                categoryModalErrorText.textContent = data.error;
+                categoryModalError.style.display = 'block';
+            }
+            return;
+        }
+
         document.getElementById('category-name').value = '';
         document.getElementById('category-icon').value = '';
-
         closeModal(modalAddCategory);
         await loadData();
     });
