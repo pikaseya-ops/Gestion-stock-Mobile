@@ -206,7 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
             header.innerHTML = `
                 <div class="category-title">
                     <h2>${cat.name}</h2>
-                    <span class="category-count">${cat.products.length} produit${cat.products.length > 1 ? 's' : ''}</span>
                     <button class="threshold-badge" title="Modifier le seuil de stock faible">
                         <i class="fa-solid fa-triangle-exclamation"></i> Seuil : ${threshold}
                     </button>
