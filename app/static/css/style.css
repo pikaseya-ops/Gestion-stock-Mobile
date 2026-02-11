@@ -44,7 +44,7 @@
     --color-surface:        #FFFFFF;
     --color-surface-hover:  #F5F2ED;
     --color-border:         #E5DFD6;
-    --color-border-light:   #F0ECE5;
+    --color-border-light:   #B0A898;
 
     --color-text:           #2C2418;
     --color-text-secondary: #7A7062;
@@ -427,11 +427,6 @@ input, select, button {
 .stat-card[data-color="sabots"]::before       { background: var(--color-sabots); }
 .stat-card[data-color="bottes"]::before       { background: var(--color-bottes); }
 
-.stat-card:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
-}
-
 .stat-icon {
     width: 44px; height: 44px;
     border-radius: var(--radius-md);
@@ -528,7 +523,7 @@ input, select, button {
     font-size: 0.73rem;
     font-weight: 600;
     color: var(--color-warning);
-    background: rgba(255, 167, 38, 0.1);
+    background: #ffffff;
     border: 1px solid rgba(255, 167, 38, 0.25);
     padding: 3px 10px;
     border-radius: var(--radius-lg);
@@ -538,9 +533,7 @@ input, select, button {
 }
 
 .threshold-badge:hover {
-    background: rgba(255, 167, 38, 0.2);
-    border-color: rgba(255, 167, 38, 0.5);
-    transform: scale(1.05);
+    font-weight: bold;
 }
 
 .threshold-badge i {
@@ -554,7 +547,7 @@ input, select, button {
     font-size: 0.73rem;
     font-weight: 600;
     color: var(--color-warning);
-    background: rgba(255, 167, 38, 0.1);
+    background: #ffffff;
     border: 1px solid var(--color-warning);
     padding: 3px 8px;
     border-radius: var(--radius-lg);
@@ -596,11 +589,6 @@ input, select, button {
     transition: all var(--transition-fast);
 }
 
-.threshold-save-btn:hover {
-    background: var(--color-primary-dark);
-    transform: scale(1.1);
-}
-
 /* ——— Sub-groups ——— */
 .product-group-label {
     grid-column: 1 / -1;
@@ -636,12 +624,9 @@ input, select, button {
     overflow: hidden;
     transition: all var(--transition-fast);
     cursor: pointer;
-}
-
-.product-card:hover {
-    border-color: var(--color-border);
-    box-shadow: var(--shadow-sm);
-    transform: translateY(-2px);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .product-card-header {
@@ -662,6 +647,10 @@ input, select, button {
 .product-card-body {
     padding: 14px 16px 10px;
     text-align: center;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .product-card-body h3 {
@@ -703,6 +692,7 @@ input, select, button {
     justify-content: flex-end;
     gap: 2px;
     border-top: 1px solid var(--color-border-light);
+    margin-top: auto;
 }
 
 /* Boutons -/+ inline autour de la quantité */
