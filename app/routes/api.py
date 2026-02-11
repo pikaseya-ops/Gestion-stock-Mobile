@@ -1,4 +1,6 @@
 import uuid
+import random
+import colorsys
 from flask import Blueprint, request, jsonify
 from models import db, Category, Product
 
@@ -7,6 +9,71 @@ api_bp = Blueprint('api', __name__, url_prefix='/api')
 
 def _generate_id():
     return uuid.uuid4().hex[:8]
+
+
+def _hex_to_hsl(hex_color):
+    """Convertit une couleur hex (#RRGGBB) en HSL."""
+    hex_color = hex_color.lstrip('#')
+    r = int(hex_color[0:2], 16) / 255.0
+    g = int(hex_color[2:4], 16) / 255.0
+    b = int(hex_color[4:6], 16) / 255.0
+    h, l, s = colorsys.rgb_to_hls(r, g, b)
+    return (h * 360, s * 100, l * 100)
+
+
+def _hsl_distance(hsl1, hsl2):
+    """Calcule la distance entre deux couleurs HSL."""
+    h1, s1, l1 = hsl1
+    h2, s2, l2 = hsl2
+    dh = min(abs(h1 - h2), 360 - abs(h1 - h2)) / 180.0
+    ds = abs(s1 - s2) / 100.0
+    dl = abs(l1 - l2) / 100.0
+    return (dh ** 2 + ds ** 2 + dl ** 2) ** 0.5
+
+
+def _generate_distant_color(existing_colors):
+    """Génère une couleur hex aléatoire éloignée des couleurs existantes."""
+    if not existing_colors:
+        # Première couleur : couleur aléatoire avec bonne saturation et luminosité
+        h = random.uniform(0, 360)
+        s = random.uniform(40, 80)
+        l = random.uniform(30, 70)
+    else:
+        # Convertir les couleurs existantes en HSL
+        existing_hsl = [_hex_to_hsl(c) for c in existing_colors]
+        
+        # Essayer plusieurs couleurs aléatoires et prendre celle qui est la plus éloignée
+        best_color = None
+        best_distance = 0
+        
+        for _ in range(50):
+            h = random.uniform(0, 360)
+            s = random.uniform(40, 80)
+            l = random.uniform(30, 70)
+            candidate_hsl = (h, s, l)
+            
+            # Distance minimale aux couleurs existantes
+            min_distance = min(_hsl_distance(candidate_hsl, existing) for existing in existing_hsl)
+            
+            if min_distance > best_distance:
+                best_distance = min_distance
+                best_color = candidate_hsl
+        
+        if best_color:
+            h, s, l = best_color
+        else:
+            # Fallback si aucune bonne couleur trouvée
+            h = random.uniform(0, 360)
+            s = random.uniform(40, 80)
+            l = random.uniform(30, 70)
+    
+    # Convertir HSL en RGB puis en hex
+    r, g, b = colorsys.hls_to_rgb(h / 360.0, l / 100.0, s / 100.0)
+    r = int(r * 255)
+    g = int(g * 255)
+    b = int(b * 255)
+    
+    return f"#{r:02x}{g:02x}{b:02x}"
 
 
 # ──────────────────────────────────────────
@@ -46,7 +113,20 @@ def create_category():
     data = request.get_json()
     name = data.get('name', '').strip()
     icon = data.get('icon', 'fa-solid fa-box').strip()
-    color = data.get('color', 'conserves').strip()
+    
+    # Si couleur fournie, l'utiliser, sinon générer une couleur éloignée
+    if 'color' in data and data.get('color'):
+        color = data.get('color', '').strip()
+        # Vérifier que c'est un hex valide
+        if not color.startswith('#') or len(color) != 7:
+            return jsonify({'error': 'Couleur invalide (format hex requis: #RRGGBB)'}), 400
+    else:
+        # Récupérer toutes les couleurs existantes (uniquement les hex valides)
+        existing_colors = [
+            cat.color for cat in Category.query.all() 
+            if cat.color and cat.color.startswith('#') and len(cat.color) == 7
+        ]
+        color = _generate_distant_color(existing_colors)
 
     if not name:
         return jsonify({'error': 'Le nom est requis'}), 400

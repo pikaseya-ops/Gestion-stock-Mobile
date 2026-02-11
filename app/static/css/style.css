@@ -14,30 +14,6 @@
     --color-secondary-light:#c99a48;
     --color-secondary-bg:   #f1d8ab;
 
-    /* ——— Couleurs par catégorie ——— */
-    --color-conserves:          #C0574F;
-    --color-conserves-light:    #f1bfbb;
-    --color-conserves-bg:       #f8cfcc;
-
-    --color-sousvides:          #5B8FB9;
-    --color-sousvides-light:    #85c1ec;
-    --color-sousvides-bg:       #a7d2f3;
-
-    --color-consommables:       #E8985E;
-    --color-consommables-light: #FDEBD3;
-    --color-consommables-bg:    #eed1b8;
-
-    --color-epices:             #7AAB4A;
-    --color-epices-light:       #D8EDCA;
-    --color-epices-bg:          #d2eeba;
-
-    --color-sabots:             #9B6FB0;
-    --color-sabots-light:       #e0c0f0;
-    --color-sabots-bg:          #e0c6f1;
-
-    --color-bottes:             #D4A254;
-    --color-bottes-light:       #F0DFC0;
-    --color-bottes-bg:          #f0d5a3;
 
     /* ——— Neutres ——— */
     --color-bg:             #fadcbc;
@@ -412,20 +388,6 @@ input, select, button {
     cursor: pointer;
 }
 
-.stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
-    width: 4px; height: 100%;
-    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-}
-
-.stat-card[data-color="conserves"]::before    { background: var(--color-conserves); }
-.stat-card[data-color="sousvides"]::before    { background: var(--color-sousvides); }
-.stat-card[data-color="consommables"]::before { background: var(--color-consommables); }
-.stat-card[data-color="epices"]::before       { background: var(--color-epices); }
-.stat-card[data-color="sabots"]::before       { background: var(--color-sabots); }
-.stat-card[data-color="bottes"]::before       { background: var(--color-bottes); }
 
 .stat-icon {
     width: 44px; height: 44px;
@@ -437,12 +399,6 @@ input, select, button {
     flex-shrink: 0;
 }
 
-.stat-card[data-color="conserves"] .stat-icon    { background: var(--color-conserves-light); color: var(--color-conserves); }
-.stat-card[data-color="sousvides"] .stat-icon    { background: var(--color-sousvides-light); color: var(--color-sousvides); }
-.stat-card[data-color="consommables"] .stat-icon { background: var(--color-consommables-light); color: var(--color-consommables); }
-.stat-card[data-color="epices"] .stat-icon       { background: var(--color-epices-light); color: var(--color-epices); }
-.stat-card[data-color="sabots"] .stat-icon       { background: var(--color-sabots-light); color: var(--color-sabots); }
-.stat-card[data-color="bottes"] .stat-icon       { background: var(--color-bottes-light); color: var(--color-bottes); }
 
 .stat-info {
     flex: 1;
@@ -500,12 +456,6 @@ input, select, button {
     flex-shrink: 0;
 }
 
-.category-dot[data-color="conserves"]    { background: var(--color-conserves); }
-.category-dot[data-color="sousvides"]    { background: var(--color-sousvides); }
-.category-dot[data-color="consommables"] { background: var(--color-consommables); }
-.category-dot[data-color="epices"]       { background: var(--color-epices); }
-.category-dot[data-color="sabots"]       { background: var(--color-sabots); }
-.category-dot[data-color="bottes"]       { background: var(--color-bottes); }
 
 .category-count {
     font-size: 0.78rem;
@@ -637,12 +587,6 @@ input, select, button {
     font-size: 1.4rem;
 }
 
-.product-card-header[data-color="conserves"]    { background: var(--color-conserves-bg); color: var(--color-conserves); }
-.product-card-header[data-color="sousvides"]    { background: var(--color-sousvides-bg); color: var(--color-sousvides); }
-.product-card-header[data-color="consommables"] { background: var(--color-consommables-bg); color: var(--color-consommables); }
-.product-card-header[data-color="epices"]       { background: var(--color-epices-bg); color: var(--color-epices); }
-.product-card-header[data-color="sabots"]       { background: var(--color-sabots-bg); color: var(--color-sabots); }
-.product-card-header[data-color="bottes"]       { background: var(--color-bottes-bg); color: var(--color-bottes); }
 
 .product-card-body {
     padding: 14px 16px 10px;

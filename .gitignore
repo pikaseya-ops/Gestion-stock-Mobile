@@ -28,3 +28,6 @@ htmlcov/
 
 # Flask instance folder
 instance/ 
+
+# Stock.db
+stock.db

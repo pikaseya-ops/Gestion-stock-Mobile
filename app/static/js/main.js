@@ -30,6 +30,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let editingProductId = null; // ID du produit en cours d'édition (null = ajout)
 
     /* ===========================================
+       HELPERS — Utilitaires
+    =========================================== */
+
+    function hexToRgba(hex, opacity = 1) {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    }
+
+    /* ===========================================
        API — Helpers
     =========================================== */
 
@@ -97,20 +108,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
         DB.forEach(cat => {
             const totalProducts = cat.products.length;
+            const color = cat.color || '#C0574F';
 
             const card = document.createElement('div');
             card.className = 'stat-card';
-            card.dataset.color = cat.color;
             card.dataset.category = cat.id;
-            card.innerHTML = `
-                <div class="stat-icon">
-                    <i class="${cat.icon}"></i>
-                </div>
-                <div class="stat-info">
-                    <span class="stat-value">${totalProducts}</span>
-                    <span class="stat-label">${cat.name}</span>
-                </div>
+            card.style.position = 'relative';
+            
+            const colorBar = document.createElement('div');
+            colorBar.style.position = 'absolute';
+            colorBar.style.top = '0';
+            colorBar.style.left = '0';
+            colorBar.style.width = '4px';
+            colorBar.style.height = '100%';
+            colorBar.style.borderRadius = 'var(--radius-sm) 0 0 var(--radius-sm)';
+            colorBar.style.background = color;
+            
+            const iconEl = document.createElement('div');
+            iconEl.className = 'stat-icon';
+            iconEl.style.background = hexToRgba(color, 0.3);
+            iconEl.style.color = color;
+            iconEl.innerHTML = `<i class="${cat.icon}"></i>`;
+            
+            const infoEl = document.createElement('div');
+            infoEl.className = 'stat-info';
+            infoEl.innerHTML = `
+                <span class="stat-value">${totalProducts}</span>
+                <span class="stat-label">${cat.name}</span>
             `;
+            
+            card.appendChild(colorBar);
+            card.appendChild(iconEl);
+            card.appendChild(infoEl);
 
             card.addEventListener('click', () => {
                 sidebarNav.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -138,9 +167,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const header = document.createElement('div');
             header.className = 'category-header';
             const threshold = cat.low_stock_threshold ?? 5;
+            const color = cat.color || '#C0574F';
+            
+            const dot = document.createElement('span');
+            dot.className = 'category-dot';
+            dot.style.background = color;
+            
             header.innerHTML = `
                 <div class="category-title">
-                    <span class="category-dot" data-color="${cat.color}"></span>
                     <h2>${cat.name}</h2>
                     <span class="category-count">${cat.products.length} produit${cat.products.length > 1 ? 's' : ''}</span>
                     <button class="threshold-badge" title="Modifier le seuil de stock faible">
@@ -148,6 +182,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     </button>
                 </div>
             `;
+            
+            const titleDiv = header.querySelector('.category-title');
+            titleDiv.insertBefore(dot, titleDiv.firstChild);
 
             // Modifier le seuil de cette catégorie
             header.querySelector('.threshold-badge').addEventListener('click', () => {
@@ -257,11 +294,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const qtyNum = product.qty !== null ? product.qty : 0;
         const qtyText = product.qty !== null ? product.qty : '?';
         const unitText = product.unit ? ' ' + product.unit : '';
+        const color = category.color || '#C0574F';
+
+        const headerEl = document.createElement('div');
+        headerEl.className = 'product-card-header';
+        headerEl.style.background = hexToRgba(color, 0.3);
+        headerEl.style.color = color;
+        headerEl.innerHTML = `<i class="${category.icon}"></i>`;
 
         card.innerHTML = `
-            <div class="product-card-header" data-color="${category.color}">
-                <i class="${category.icon}"></i>
-            </div>
             <div class="product-card-body">
                 <h3>${product.name}</h3>
                 <div class="qty-inline">
@@ -276,6 +317,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="btn-icon btn-icon--danger btn-delete" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
             </div>
         `;
+        
+        card.insertBefore(headerEl, card.firstChild);
 
         // État local de la quantité
         let localQty = qtyNum;
@@ -518,13 +561,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!name) return;
 
-        // Palette de couleurs de secours
-        const fallbackColors = ['conserves', 'sousvides', 'consommables', 'epices', 'sabots', 'bottes'];
-        const color = fallbackColors[DB.length % fallbackColors.length];
-
         await api('/api/categories', {
             method: 'POST',
-            body: { name, icon, color }
+            body: { name, icon }
         });
 
         document.getElementById('category-name').value = '';
