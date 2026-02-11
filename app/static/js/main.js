@@ -1,5 +1,5 @@
 /* =============================================
-   StockAtelier — main.js
+   Poulstock — main.js
    Rendu dynamique via API Flask + SQLite
    ============================================= */
 
@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalAddCategory    = document.getElementById('modal-add-category-modal');
     const modalConfirmDelete  = document.getElementById('modal-confirm-delete');
     const modalThresholds     = document.getElementById('modal-thresholds');
+    const btnAddProduct       = document.getElementById('btn-add-product');
 
     const alertsPanel         = document.getElementById('alerts-panel');
     const alertsOverlay       = document.getElementById('alerts-overlay');
@@ -68,6 +69,14 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCategories();
         populateCategorySelect();
         updateAlertsBell();
+        updateAddProductButton();
+    }
+
+    function updateAddProductButton() {
+        const hasCategories = DB.length > 0;
+        if (btnAddProduct) {
+            btnAddProduct.disabled = !hasCategories;
+        }
     }
 
     /* ——— Sidebar Nav ——— */
@@ -504,7 +513,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Bouton "Ajouter" topbar
-    document.getElementById('btn-add-product')?.addEventListener('click', () => {
+    btnAddProduct?.addEventListener('click', () => {
+        if (DB.length === 0) return; // Ne rien faire si pas de catégories
         resetProductForm();
         openModal(modalAddProduct);
     });

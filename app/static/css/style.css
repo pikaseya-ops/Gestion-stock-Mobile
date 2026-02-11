@@ -290,10 +290,16 @@ input, select, button {
     background: var(--color-primary);
     color: #fff;
 }
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
     background: var(--color-primary-dark);
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 .btn-danger {
