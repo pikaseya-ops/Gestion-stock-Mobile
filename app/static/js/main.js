@@ -64,6 +64,11 @@ document.addEventListener('DOMContentLoaded', () => {
     =========================================== */
 
     function render() {
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            const addSection = mainContent.querySelector('.add-category-section');
+            if (addSection) addSection.remove();
+        }
         renderSidebarNav();
         renderStats();
         renderCategories();
@@ -83,6 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSidebarNav() {
         const existingDynamic = sidebarNav.querySelectorAll('.nav-item[data-target]:not([data-target="all"])');
         existingDynamic.forEach(el => el.remove());
+        
+        const oldAddBtn = sidebarNav.querySelector('#btn-add-category');
+        if (oldAddBtn) oldAddBtn.remove();
 
         DB.forEach(cat => {
             const a = document.createElement('a');
@@ -92,6 +100,17 @@ document.addEventListener('DOMContentLoaded', () => {
             a.innerHTML = `<i class="${cat.icon}"></i><span>${cat.name}</span>`;
             sidebarNav.appendChild(a);
         });
+
+        const addCategoryBtn = document.createElement('button');
+        addCategoryBtn.id = 'btn-add-category';
+        addCategoryBtn.className = 'nav-item';
+        addCategoryBtn.innerHTML = `<i class="fa-solid fa-folder-plus"></i><span>Ajouter une catégorie</span>`;
+        addCategoryBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (window.innerWidth <= 768) sidebar.classList.remove('is-open');
+            openModal(modalAddCategory);
+        });
+        sidebarNav.appendChild(addCategoryBtn);
 
         bindNavClicks();
     }
@@ -519,10 +538,6 @@ document.addEventListener('DOMContentLoaded', () => {
         openModal(modalAddProduct);
     });
 
-    // Bouton "Ajouter catégorie"
-    document.getElementById('btn-add-category')?.addEventListener('click', () => {
-        openModal(modalAddCategory);
-    });
 
     // Confirmer ajout / modification produit
     document.getElementById('btn-confirm-add-product')?.addEventListener('click', async () => {
