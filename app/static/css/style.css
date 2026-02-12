@@ -1101,6 +1101,52 @@ input, select, button {
 }
 
 /* =============================================
+   Icon Selector Grid
+   ============================================= */
+
+.icon-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    gap: 10px;
+    padding: 12px;
+    background: var(--color-surface-hover);
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--color-border);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.icon-selector-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--color-border);
+    background: var(--color-surface);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-size: 1.2rem;
+    color: var(--color-text-secondary);
+}
+
+.icon-selector-item:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary-bg);
+    color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.icon-selector-item.selected {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: #fff;
+    box-shadow: var(--shadow-md);
+}
+
+/* =============================================
    Animations
    ============================================= */
 

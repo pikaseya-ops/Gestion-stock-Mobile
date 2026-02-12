@@ -110,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (window.innerWidth <= 768) sidebar.classList.remove('is-open');
             const errEl = document.getElementById('category-modal-error');
             if (errEl) errEl.style.display = 'none';
+            renderIconSelector();
             openModal(modalAddCategory);
         });
         sidebarNav.appendChild(addCategoryBtn);
@@ -118,10 +119,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function bindNavClicks() {
-        sidebarNav.querySelectorAll('.nav-item').forEach(item => {
+        sidebarNav.querySelectorAll('.nav-item:not(#btn-add-category)').forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
-                sidebarNav.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                sidebarNav.querySelectorAll('.nav-item:not(#btn-add-category)').forEach(n => n.classList.remove('active'));
                 item.classList.add('active');
 
                 const target = item.dataset.target;
@@ -583,10 +584,81 @@ document.addEventListener('DOMContentLoaded', () => {
     // Confirmer ajout catégorie
     const categoryModalError = document.getElementById('category-modal-error');
     const categoryModalErrorText = document.getElementById('category-modal-error-text');
+    const iconSelectorGrid = document.getElementById('icon-selector-grid');
+    const categoryIconInput = document.getElementById('category-icon');
+
+    // Liste d'icônes pertinentes pour gestion de stock
+    const availableIcons = [
+        'fa-solid fa-box',
+        'fa-solid fa-box-archive',
+        'fa-solid fa-jar',
+        'fa-solid fa-cart-shopping',
+        'fa-solid fa-tags',
+        'fa-solid fa-tag',
+        'fa-solid fa-warehouse',
+        'fa-solid fa-pallet',
+        'fa-solid fa-cube',
+        'fa-solid fa-cubes',
+        'fa-solid fa-basket-shopping',
+        'fa-solid fa-shopping-bag',
+        'fa-solid fa-dolly',
+        'fa-solid fa-boxes-stacked',
+        'fa-solid fa-tape',
+        'fa-solid fa-scissors',
+        'fa-solid fa-toolbox',
+        'fa-solid fa-wrench',
+        'fa-solid fa-screwdriver-wrench',
+        'fa-solid fa-hammer',
+        'fa-solid fa-clipboard-list',
+        'fa-solid fa-list-check',
+        'fa-solid fa-file-invoice',
+        'fa-solid fa-receipt',
+    ];
+
+    function renderIconSelector() {
+        if (!iconSelectorGrid) return;
+        
+        // Récupérer les icônes déjà utilisées
+        const usedIcons = new Set(DB.map(cat => cat.icon));
+        
+        // Filtrer les icônes disponibles
+        const iconsToShow = availableIcons.filter(icon => !usedIcons.has(icon));
+        
+        iconSelectorGrid.innerHTML = '';
+        
+        iconsToShow.forEach(icon => {
+            const iconBtn = document.createElement('div');
+            iconBtn.className = 'icon-selector-item';
+            iconBtn.dataset.icon = icon;
+            iconBtn.innerHTML = `<i class="${icon}"></i>`;
+            
+            iconBtn.addEventListener('click', () => {
+                // Désélectionner les autres
+                iconSelectorGrid.querySelectorAll('.icon-selector-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                // Sélectionner celui-ci
+                iconBtn.classList.add('selected');
+                categoryIconInput.value = icon;
+            });
+            
+            iconSelectorGrid.appendChild(iconBtn);
+        });
+        
+        // Sélectionner la première icône par défaut si aucune sélectionnée
+        if (iconsToShow.length > 0 && !categoryIconInput.value) {
+            const firstIcon = iconSelectorGrid.querySelector('.icon-selector-item');
+            if (firstIcon) {
+                firstIcon.classList.add('selected');
+                categoryIconInput.value = firstIcon.dataset.icon;
+            }
+        }
+    }
+
 
     document.getElementById('btn-confirm-add-category')?.addEventListener('click', async () => {
         const name = document.getElementById('category-name').value.trim();
-        const icon = document.getElementById('category-icon').value.trim() || 'fa-solid fa-box';
+        const icon = categoryIconInput.value.trim() || 'fa-solid fa-box';
 
         if (!name) return;
 
@@ -606,7 +678,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         document.getElementById('category-name').value = '';
-        document.getElementById('category-icon').value = '';
+        categoryIconInput.value = 'fa-solid fa-box';
+        renderIconSelector();
         closeModal(modalAddCategory);
         await loadData();
     });
