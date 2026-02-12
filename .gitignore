@@ -31,3 +31,6 @@ instance/
 
 # Stock.db
 stock.db
+
+# cloudflared
+cloudflared.exe
