@@ -2,12 +2,13 @@ name: Build and Push Docker Image to Github Registry
 
 on:
   push:
-    # branches:
-    #   - main
+    branches:
+      - main
     paths:
+      - '.github/**'
       - 'app/**'
       - 'packages/Dockerfile'
-      - '.github/**'
+      - 'packages/enstrypoint.sh'
   workflow_dispatch:
     inputs:
       version:
