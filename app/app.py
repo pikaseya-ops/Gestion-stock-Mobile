@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 app.config['SECRET_KEY'] = os.getenv('SESSION_TOKEN')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), '/instances/stock.db'
+    os.path.dirname(os.path.abspath(__file__)), 'instances/stock.db'
 )
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
