@@ -11,7 +11,7 @@ services:
     expose:
       - 5000
     volumes:
-      - bdd:/app/instance/
+      - bdd:/app/instances/
 
 volumes:
   bdd:
