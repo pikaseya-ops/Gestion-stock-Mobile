@@ -1,7 +1,7 @@
 services:
   python:
     restart: unless-stopped
-    image: ghrc.io/pikaseya-ops/gestion-stock-mobile:${DOCKER_TAG:-main}
+    image: ghcr.io/pikaseya-ops/gestion-stock-mobile:${DOCKER_TAG:-main}
     container_name: gestion-stock-mobile
     hostname: gestion-stock-mobile
     environment:
