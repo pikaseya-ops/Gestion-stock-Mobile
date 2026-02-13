@@ -1,0 +1,17 @@
+services:
+  python:
+    restart: unless-stopped
+    image: ghrc.io/pikaseya-ops/gestion-stock-mobile:${DOCKER_TAG:-main}
+    container_name: gestion-stock-mobile
+    hostname: gestion-stock-mobile
+    environment:
+      TZ: Europe/Paris
+      SESSION_TOKEN: ${SESSION_TOKEN}
+      DEBUG_MODE: ${DEBUG_MODE}
+    expose:
+      - 5000
+    volumes:
+      - bdd:/app/instance/
+
+volumes:
+  bdd:
