@@ -2,8 +2,8 @@ name: Build and Push Docker Image to Github Registry
 
 on:
   push:
-    branches:
-      - main
+    # branches:
+    #   - main
     paths:
       - 'app/**'
       - 'packages/Dockerfile'
