@@ -6,7 +6,6 @@ WORKDIR /app
 
 # Copy project files
 COPY /app .
-COPY /packages/entrypoint.sh ./entrypoint.sh
 
 # Init project dependencies
 RUN pip install -r requirements.txt
