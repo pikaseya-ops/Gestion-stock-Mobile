@@ -8,7 +8,7 @@ on:
       - '.github/**'
       - 'app/**'
       - 'packages/Dockerfile'
-      - 'packages/enstrypoint.sh'
+      - 'packages/entrypoint.sh'
   workflow_dispatch:
     inputs:
       version:
