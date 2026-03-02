@@ -694,7 +694,7 @@ input, select, button {
     padding: 6px 12px;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     gap: 2px;
     border-top: 1px solid var(--color-border-light);
     margin-top: auto;
