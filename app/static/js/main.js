@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebar             = document.getElementById('sidebar');
     const sidebarToggle       = document.getElementById('sidebar-toggle');
     const sidebarNav          = document.getElementById('sidebar-nav');
-    const statsGrid           = document.getElementById('stats-grid');
     const categoriesContainer = document.getElementById('categories-container');
     const searchInput         = document.getElementById('search-input');
 
@@ -75,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (addSection) addSection.remove();
         }
         renderSidebarNav();
-        renderStats();
         renderCategories();
         initDragAndDrop();
         populateCategorySelect();
@@ -138,55 +136,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /* ——— Stats Cards ——— */
-    function renderStats() {
-        statsGrid.innerHTML = '';
-
-        DB.forEach(cat => {
-            const totalProducts = cat.products.length;
-            const color = cat.color || '#C0574F';
-
-            const card = document.createElement('div');
-            card.className = 'stat-card';
-            card.dataset.category = cat.id;
-            card.style.position = 'relative';
-            
-            const colorBar = document.createElement('div');
-            colorBar.style.position = 'absolute';
-            colorBar.style.top = '0';
-            colorBar.style.left = '0';
-            colorBar.style.width = '4px';
-            colorBar.style.height = '100%';
-            colorBar.style.borderRadius = 'var(--radius-sm) 0 0 var(--radius-sm)';
-            colorBar.style.background = color;
-            
-            const iconEl = document.createElement('div');
-            iconEl.className = 'stat-icon';
-            iconEl.style.background = hexToRgba(color, 0.3);
-            iconEl.style.color = color;
-            iconEl.innerHTML = `<i class="${cat.icon}"></i>`;
-            
-            const infoEl = document.createElement('div');
-            infoEl.className = 'stat-info';
-            infoEl.innerHTML = `
-                <span class="stat-value">${totalProducts}</span>
-                <span class="stat-label">${cat.name}</span>
-            `;
-            
-            card.appendChild(colorBar);
-            card.appendChild(iconEl);
-            card.appendChild(infoEl);
-
-            card.addEventListener('click', () => {
-                sidebarNav.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-                const navItem = sidebarNav.querySelector(`[data-target="${cat.id}"]`);
-                if (navItem) navItem.classList.add('active');
-                filterByCategory(cat.id);
-            });
-
-            statsGrid.appendChild(card);
-        });
-    }
-
     /* ——— Categories & Products ——— */
     function renderCategories() {
         categoriesContainer.innerHTML = '';
@@ -937,35 +886,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* ===========================================
-       SCROLL — Collapse des stats au scroll bas
-    =========================================== */
-
-    const stickyHeaderWrap = document.querySelector('.sticky-header-wrap');
-    let lastScrollY = 0;
-
-    window.addEventListener('scroll', () => {
-        const scrollY = window.scrollY;
-        if (stickyHeaderWrap && window.innerWidth < 1024) {
-            if (scrollY > lastScrollY && scrollY > 80) {
-                // Scroll vers le bas (contenu monte) → réduire les stats
-                stickyHeaderWrap.classList.add('stats-collapsed');
-            } else if (scrollY < 40) {
-                // Tout en haut → ré-afficher les stats
-                stickyHeaderWrap.classList.remove('stats-collapsed');
-            }
-        } else if (stickyHeaderWrap) {
-            stickyHeaderWrap.classList.remove('stats-collapsed');
-        }
-        lastScrollY = scrollY;
-    });
-
-    // Si la fenêtre est agrandie, s'assurer que les stats sont visibles
-    window.addEventListener('resize', () => {
-        if (stickyHeaderWrap && window.innerWidth >= 1024) {
-            stickyHeaderWrap.classList.remove('stats-collapsed');
-        }
-    });
 
     /* ===========================================
        INIT — Charger les données depuis l'API
