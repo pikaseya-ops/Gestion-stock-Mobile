@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalAddProduct     = document.getElementById('modal-add-product');
     const modalAddCategory    = document.getElementById('modal-add-category-modal');
     const modalConfirmDelete  = document.getElementById('modal-confirm-delete');
-    const modalThresholds     = document.getElementById('modal-thresholds');
 
     const alertsPanel         = document.getElementById('alerts-panel');
     const alertsOverlay       = document.getElementById('alerts-overlay');
@@ -25,9 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const bellBadge           = document.getElementById('bell-badge');
 
     // ——— État ———
-    let DB = [];                // Données chargées depuis l'API
-    let deleteCallback = null;  // Callback pour la suppression confirmée
-    let editingProductId = null; // ID du produit en cours d'édition (null = ajout)
+    let DB = [];                    // Données chargées depuis l'API
+    let deleteCallback = null;      // Callback pour la suppression confirmée
+    let editingProductId = null;    // ID du produit en cours d'édition (null = ajout)
+    let editingProductCurrentQty = null; // Qté actuelle du produit en cours d'édition
 
     /* ===========================================
        API — Helpers
@@ -137,53 +137,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // Header
             const header = document.createElement('div');
             header.className = 'category-header';
-            const threshold = cat.low_stock_threshold ?? 5;
             header.innerHTML = `
                 <div class="category-title">
                     <span class="category-dot" data-color="${cat.color}"></span>
                     <h2>${cat.name}</h2>
                     <span class="category-count">${cat.products.length} produit${cat.products.length > 1 ? 's' : ''}</span>
-                    <button class="threshold-badge" title="Modifier le seuil de stock faible">
-                        <i class="fa-solid fa-triangle-exclamation"></i> Seuil : ${threshold}
-                    </button>
                 </div>
             `;
-
-            // Modifier le seuil de cette catégorie
-            header.querySelector('.threshold-badge').addEventListener('click', () => {
-                const badge = header.querySelector('.threshold-badge');
-                const currentVal = cat.low_stock_threshold ?? 5;
-
-                // Remplacer le badge par un petit input inline
-                const editor = document.createElement('span');
-                editor.className = 'threshold-editor';
-                editor.innerHTML = `
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    Seuil :
-                    <input type="number" min="0" value="${currentVal}" class="threshold-inline-input">
-                    <button class="threshold-save-btn" title="Valider"><i class="fa-solid fa-check"></i></button>
-                `;
-                badge.replaceWith(editor);
-
-                const input = editor.querySelector('input');
-                input.focus();
-                input.select();
-
-                const saveThreshold = async () => {
-                    const newVal = parseInt(input.value) || 0;
-                    await api(`/api/categories/${cat.id}/threshold`, {
-                        method: 'PUT',
-                        body: { low_stock_threshold: newVal }
-                    });
-                    await loadData();
-                };
-
-                editor.querySelector('.threshold-save-btn').addEventListener('click', saveThreshold);
-                input.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') saveThreshold();
-                    if (e.key === 'Escape') loadData(); // Annuler
-                });
-            });
 
             // Product grid
             const grid = document.createElement('div');
@@ -243,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
         card.className = 'product-card';
         card.dataset.productId = product.id;
 
-        const threshold = category.low_stock_threshold ?? 5;
+        const threshold = product.low_stock_threshold ?? 5;
         const isLow = product.qty !== null && product.qty <= threshold;
 
         let qtyClass = 'product-qty';
@@ -273,6 +233,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="qty-validate-btn" style="display:none"><i class="fa-solid fa-check"></i> Valider</button>
             </div>
             <div class="product-card-footer">
+                <button class="threshold-badge" title="Modifier le min. de stock">
+                    <i class="fa-solid fa-triangle-exclamation"></i> min. ${threshold}
+                </button>
                 <button class="btn-icon btn-icon--danger btn-delete" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
             </div>
         `;
@@ -317,10 +280,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.closest('.btn-delete') || e.target.closest('.qty-inline-btn') || e.target.closest('.qty-validate-btn')) return;
 
             editingProductId = product.id;
+            editingProductCurrentQty = product.qty ?? 0;
             document.getElementById('modal-product-title').innerHTML = '<i class="fa-solid fa-pen"></i> Modifier le produit';
             document.getElementById('btn-confirm-add-product').textContent = 'Enregistrer';
             document.getElementById('product-name').value = product.name;
-            document.getElementById('product-qty').value = product.qty !== null ? product.qty : '';
+            document.getElementById('product-qty').value = 0;
+            document.getElementById('product-qty-label').textContent = `Qté à ajouter (actuel : ${product.qty ?? '?'}${product.unit ? ' ' + product.unit : ''})`;
             document.getElementById('product-unit').value = product.unit || '';
             document.getElementById('product-note').value = product.note || '';
             document.getElementById('product-category').value = category.id;
@@ -336,6 +301,41 @@ document.addEventListener('DOMContentLoaded', () => {
                     await loadData();
                 }
             );
+        });
+
+        // Modifier le min. de ce produit
+        card.querySelector('.threshold-badge').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const badge = card.querySelector('.threshold-badge');
+            const currentVal = product.low_stock_threshold ?? 5;
+
+            const editor = document.createElement('span');
+            editor.className = 'threshold-editor';
+            editor.innerHTML = `
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <input type="number" min="0" value="${currentVal}" class="threshold-inline-input">
+                <button class="threshold-save-btn" title="Valider"><i class="fa-solid fa-check"></i></button>
+            `;
+            badge.replaceWith(editor);
+
+            const input = editor.querySelector('input');
+            input.focus();
+            input.select();
+
+            const saveThreshold = async () => {
+                const newVal = parseInt(input.value) || 0;
+                await api(`/api/products/${product.id}/threshold`, {
+                    method: 'PUT',
+                    body: { low_stock_threshold: newVal }
+                });
+                await loadData();
+            };
+
+            editor.querySelector('.threshold-save-btn').addEventListener('click', saveThreshold);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') saveThreshold();
+                if (e.key === 'Escape') loadData();
+            });
         });
 
         return card;
@@ -437,8 +437,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function resetProductForm() {
         editingProductId = null;
+        editingProductCurrentQty = null;
         document.getElementById('modal-product-title').innerHTML = '<i class="fa-solid fa-plus"></i> Ajouter un produit';
         document.getElementById('btn-confirm-add-product').textContent = 'Ajouter';
+        document.getElementById('product-qty-label').textContent = 'Quantité';
         document.getElementById('product-name').value = '';
         document.getElementById('product-qty').value = '';
         document.getElementById('product-unit').value = '';
@@ -482,12 +484,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!name) return;
 
         if (editingProductId) {
-            // Mode édition → PUT
+            // Mode édition → PUT (la qty saisie s'additionne au stock existant)
+            const addedQty = qty !== '' ? parseInt(qty) : 0;
+            const newQty = editingProductCurrentQty + addedQty;
             await api(`/api/products/${editingProductId}`, {
                 method: 'PUT',
                 body: {
                     name: name,
-                    qty: qty ? parseInt(qty) : null,
+                    qty: newQty,
                     unit: unit,
                     note: note,
                 }
@@ -550,12 +554,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function getLowStockProducts() {
         const alerts = [];
         DB.forEach(cat => {
-            const threshold = cat.low_stock_threshold ?? 5;
-            const lowProducts = cat.products.filter(p =>
-                p.qty === null || (p.qty !== null && p.qty <= threshold)
-            );
+            const lowProducts = cat.products.filter(p => {
+                const t = p.low_stock_threshold ?? 5;
+                return p.qty === null || p.qty <= t;
+            });
             if (lowProducts.length > 0) {
-                alerts.push({ category: cat, products: lowProducts, threshold });
+                alerts.push({ category: cat, products: lowProducts });
             }
         });
         return alerts;
@@ -595,10 +599,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="alert-category-title">
                     <i class="${group.category.icon}"></i>
                     ${group.category.name}
-                    <span style="font-weight:400; font-size:0.7rem; color:var(--color-text-muted)">(seuil : ${group.threshold})</span>
                 </div>
                 ${group.products.map(p => {
                     const isUnknown = p.qty === null;
+                    const t = p.low_stock_threshold ?? 5;
                     return `
                         <div class="alert-item ${isUnknown ? 'unknown' : ''}">
                             <div class="alert-item-info">
@@ -610,6 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     }
                                 </div>
                             </div>
+                            <span style="font-size:0.65rem; color:var(--color-text-muted)">min. : ${t}</span>
                         </div>
                     `;
                 }).join('')}
@@ -642,42 +647,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Régler les seuils
-    document.getElementById('btn-edit-thresholds')?.addEventListener('click', () => {
-        closeAlertsPanel();
-        renderThresholdsModal();
-        openModal(modalThresholds);
-    });
-
-    function renderThresholdsModal() {
-        const body = document.getElementById('thresholds-body');
-        body.innerHTML = DB.map(cat => `
-            <div class="threshold-row">
-                <label><i class="${cat.icon}"></i> ${cat.name}</label>
-                <input type="number" min="0" data-cat-id="${cat.id}" value="${cat.low_stock_threshold ?? 5}">
-            </div>
-        `).join('');
-    }
-
-    document.getElementById('btn-save-thresholds')?.addEventListener('click', async () => {
-        const inputs = document.querySelectorAll('#thresholds-body input[data-cat-id]');
-        const promises = [];
-
-        inputs.forEach(input => {
-            const catId = input.dataset.catId;
-            const threshold = parseInt(input.value) || 0;
-            promises.push(
-                api(`/api/categories/${catId}/threshold`, {
-                    method: 'PUT',
-                    body: { low_stock_threshold: threshold }
-                })
-            );
-        });
-
-        await Promise.all(promises);
-        closeModal(modalThresholds);
-        await loadData();
-    });
 
     /* ===========================================
        SIDEBAR TOGGLE (mobile)

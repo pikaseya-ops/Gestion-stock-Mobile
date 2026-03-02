@@ -84,29 +84,7 @@
         <div class="alerts-panel-body" id="alerts-panel-body">
             <!-- Contenu généré dynamiquement -->
         </div>
-        <div class="alerts-panel-footer">
-            <button class="btn btn-sm btn-outline" id="btn-edit-thresholds">
-                <i class="fa-solid fa-sliders"></i> Régler les seuils
-            </button>
-        </div>
     </aside>
-
-    <!-- ========== MODAL — Régler les seuils ========== -->
-    <div class="modal-overlay" id="modal-thresholds">
-        <div class="modal">
-            <div class="modal-header">
-                <h2><i class="fa-solid fa-sliders"></i> Seuils de stock faible</h2>
-                <button class="btn-icon modal-close"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="modal-body" id="thresholds-body">
-                <!-- Généré dynamiquement -->
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-ghost modal-close">Fermer</button>
-                <button class="btn btn-primary" id="btn-save-thresholds">Enregistrer</button>
-            </div>
-        </div>
-    </div>
 
     <!-- ========== MODAL — Add / Edit Product ========== -->
     <div class="modal-overlay" id="modal-add-product">
@@ -122,7 +100,7 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="product-qty">Quantité</label>
+                        <label for="product-qty" id="product-qty-label">Quantité</label>
                         <input type="number" id="product-qty" placeholder="Ex : 245">
                     </div>
                     <div class="form-group">

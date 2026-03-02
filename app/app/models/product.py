@@ -11,5 +11,6 @@ class Product(db.Model):
     unit = db.Column(db.String, default="", nullable=False)
     note = db.Column(db.String, default="")
     grp = db.Column(db.String, default="")
+    low_stock_threshold = db.Column(db.Integer, default=5)
 
     category = db.relationship("Category", back_populates="products")

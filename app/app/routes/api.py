@@ -31,6 +31,7 @@ def get_all_data():
                     'unit': p.unit,
                     'note': p.note if p.note else None,
                     'group': p.grp if p.grp else None,
+                    'low_stock_threshold': p.low_stock_threshold if p.low_stock_threshold is not None else 5,
                 }
                 for p in sorted(cat.products, key=lambda x: x.id)
             ]
@@ -98,6 +99,8 @@ def create_product():
     if not cat:
         return jsonify({'error': 'Catégorie introuvable'}), 404
 
+    threshold = data.get('low_stock_threshold', 5)
+
     prod_id = _generate_id()
     product = Product(
         id=prod_id,
@@ -107,6 +110,7 @@ def create_product():
         unit=unit or '',
         note=note or '',
         grp=grp or '',
+        low_stock_threshold=threshold,
     )
     db.session.add(product)
     db.session.commit()
@@ -140,11 +144,29 @@ def update_product(prod_id):
     product.unit = data.get('unit', product.unit).strip()
     product.note = data.get('note', product.note).strip()
     product.grp = data.get('group', product.grp).strip()
+    if 'low_stock_threshold' in data:
+        product.low_stock_threshold = data['low_stock_threshold']
     db.session.commit()
     return jsonify({
         'id': prod_id, 'name': product.name, 'qty': product.qty,
         'unit': product.unit, 'note': product.note, 'group': product.grp
     })
+
+
+# ──────────────────────────────────────────
+# PUT /api/products/<id>/threshold
+# ──────────────────────────────────────────
+@api_bp.route('/products/<prod_id>/threshold', methods=['PUT'])
+def update_product_threshold(prod_id):
+    data = request.get_json()
+    threshold = data.get('low_stock_threshold', 5)
+
+    product = Product.query.get(prod_id)
+    if not product:
+        return jsonify({'error': 'Produit introuvable'}), 404
+    product.low_stock_threshold = threshold
+    db.session.commit()
+    return jsonify({'success': True, 'low_stock_threshold': threshold})
 
 
 # ──────────────────────────────────────────
