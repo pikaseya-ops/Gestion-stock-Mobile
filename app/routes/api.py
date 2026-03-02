@@ -81,7 +81,7 @@ def _generate_distant_color(existing_colors):
 # ──────────────────────────────────────────
 @api_bp.route('/data', methods=['GET'])
 def get_all_data():
-    categories = Category.query.order_by(Category.sort_order).all()
+    categories = Category.query.order_by(Category.sort_order, Category.name).all()
     result = []
     for cat in categories:
         result.append({
@@ -148,6 +148,45 @@ def create_category():
     db.session.add(cat)
     db.session.commit()
     return jsonify({'id': cat.id, 'name': name, 'icon': icon, 'color': color, 'products': []}), 201
+
+
+# ──────────────────────────────────────────
+# PUT /api/categories/<id>
+# ──────────────────────────────────────────
+@api_bp.route('/categories/<int:cat_id>', methods=['PUT'])
+def update_category(cat_id):
+    cat = Category.query.get(cat_id)
+    if not cat:
+        return jsonify({'error': 'Catégorie introuvable'}), 404
+    data = request.get_json()
+    name = data.get('name', cat.name).strip()
+    icon = data.get('icon', cat.icon)
+    if not name:
+        return jsonify({'error': 'Le nom est requis'}), 400
+    existing = Category.query.filter(
+        db.func.lower(Category.name) == name.lower(),
+        Category.id != cat_id
+    ).first()
+    if existing:
+        return jsonify({'error': 'Une catégorie avec ce nom existe déjà.'}), 400
+    cat.name = name
+    cat.icon = icon
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+# ──────────────────────────────────────────
+# PUT /api/categories/reorder
+# ──────────────────────────────────────────
+@api_bp.route('/categories/reorder', methods=['PUT'])
+def reorder_categories():
+    items = request.get_json()
+    for item in items:
+        cat = Category.query.get(item['id'])
+        if cat:
+            cat.sort_order = item['sort_order']
+    db.session.commit()
+    return jsonify({'success': True})
 
 
 # ──────────────────────────────────────────
@@ -233,6 +272,11 @@ def update_product(prod_id):
     product.grp = data.get('group', product.grp).strip()
     if 'low_stock_threshold' in data:
         product.low_stock_threshold = data['low_stock_threshold']
+    if 'category_id' in data:
+        new_cat_id = data['category_id']
+        cat = Category.query.get(int(new_cat_id))
+        if cat:
+            product.category_id = int(new_cat_id)
     db.session.commit()
     return jsonify({
         'id': prod_id, 'name': product.name, 'qty': product.qty,

@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let deleteCallback = null;      // Callback pour la suppression confirmée
     let editingProductId = null;    // ID du produit en cours d'édition (null = ajout)
     let editingProductCurrentQty = null; // Qté actuelle du produit en cours d'édition
+    let editingCategoryId = null;   // ID de la catégorie en cours d'édition (null = ajout)
 
     /* ===========================================
        HELPERS — Utilitaires
@@ -56,6 +57,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadData() {
         DB = await api('/api/data');
+        // Tri alphabétique des catégories par défaut, sauf si l'utilisateur a défini un ordre custom
+        if (!localStorage.getItem('categories_custom_ordered')) {
+            DB.sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true, sensitivity: 'base' }));
+        }
         render();
     }
 
@@ -72,6 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSidebarNav();
         renderStats();
         renderCategories();
+        initDragAndDrop();
         populateCategorySelect();
         updateAlertsBell();
         updateAddProductButton();
@@ -108,9 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
         addCategoryBtn.addEventListener('click', (e) => {
             e.preventDefault();
             if (window.innerWidth <= 768) sidebar.classList.remove('is-open');
-            const errEl = document.getElementById('category-modal-error');
-            if (errEl) errEl.style.display = 'none';
-            renderIconSelector();
+            resetCategoryForm();
             openModal(modalAddCategory);
         });
         sidebarNav.appendChild(addCategoryBtn);
@@ -208,14 +212,47 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h2>${cat.name}</h2>
                     <span class="category-count">${cat.products.length} produit${cat.products.length > 1 ? 's' : ''}</span>
                 </div>
+                <div style="display:flex;gap:4px">
+                    <button class="btn-icon btn-edit-cat" title="Modifier la catégorie"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn-icon btn-icon--danger btn-delete-cat" title="Supprimer la catégorie"><i class="fa-solid fa-trash"></i></button>
+                </div>
             `;
 
             const titleDiv = header.querySelector('.category-title');
             titleDiv.insertBefore(dot, titleDiv.firstChild);
 
+            // Bouton modifier catégorie
+            header.querySelector('.btn-edit-cat').addEventListener('click', (e) => {
+                e.stopPropagation();
+                editingCategoryId = cat.id;
+                document.getElementById('category-name').value = cat.name;
+                const errEl = document.getElementById('category-modal-error');
+                if (errEl) errEl.style.display = 'none';
+                renderIconSelector(cat.icon);
+                document.querySelector('#modal-add-category-modal .modal-header h2').innerHTML =
+                    '<i class="fa-solid fa-pen"></i> Modifier la catégorie';
+                document.getElementById('btn-confirm-add-category').textContent = 'Enregistrer';
+                openModal(modalAddCategory);
+            });
+
+            // Bouton supprimer catégorie
+            header.querySelector('.btn-delete-cat').addEventListener('click', (e) => {
+                e.stopPropagation();
+                openDeleteConfirm(
+                    `Supprimer la catégorie « ${cat.name} » et tous ses produits ?`,
+                    async () => {
+                        await api(`/api/categories/${cat.id}`, { method: 'DELETE' });
+                        await loadData();
+                    }
+                );
+            });
+
             // Product grid
             const grid = document.createElement('div');
             grid.className = 'product-grid';
+
+            // Tri alphabétique/alphanumérique automatique
+            cat.products.sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true, sensitivity: 'base' }));
 
             // Grouper si la catégorie a des groupes
             const hasGroups = cat.products.some(p => p.group);
@@ -308,7 +345,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="threshold-badge" title="Modifier le min. de stock">
                     <i class="fa-solid fa-triangle-exclamation"></i> min. ${threshold}
                 </button>
-                <button class="btn-icon btn-icon--danger btn-delete" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                <div style="display:flex;gap:2px">
+                    <button class="btn-icon btn-edit" title="Modifier"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn-icon btn-icon--danger btn-delete" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                </div>
             </div>
         `;
         
@@ -349,10 +389,9 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadData();
         });
 
-        // Clic sur la card → modifier le produit
-        card.addEventListener('click', (e) => {
-            if (e.target.closest('.btn-delete') || e.target.closest('.qty-inline-btn') || e.target.closest('.qty-validate-btn')) return;
-
+        // Bouton crayon → modifier le produit
+        card.querySelector('.btn-edit').addEventListener('click', (e) => {
+            e.stopPropagation();
             editingProductId = product.id;
             editingProductCurrentQty = product.qty ?? 0;
             document.getElementById('modal-product-title').innerHTML = '<i class="fa-solid fa-pen"></i> Modifier le produit';
@@ -509,6 +548,16 @@ document.addEventListener('DOMContentLoaded', () => {
         openModal(modalConfirmDelete);
     }
 
+    function resetCategoryForm() {
+        editingCategoryId = null;
+        document.getElementById('category-name').value = '';
+        categoryIconInput.value = 'fa-solid fa-box';
+        document.querySelector('#modal-add-category-modal .modal-header h2').innerHTML =
+            '<i class="fa-solid fa-folder-plus"></i> Nouvelle catégorie';
+        document.getElementById('btn-confirm-add-category').textContent = 'Créer';
+        renderIconSelector();
+    }
+
     function resetProductForm() {
         editingProductId = null;
         editingProductCurrentQty = null;
@@ -523,7 +572,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Fermer les modales
     document.querySelectorAll('.modal-close').forEach(btn => {
-        btn.addEventListener('click', () => closeModal(btn.closest('.modal-overlay')));
+        btn.addEventListener('click', () => {
+            const overlay = btn.closest('.modal-overlay');
+            if (overlay === modalAddCategory) resetCategoryForm();
+            closeModal(overlay);
+        });
     });
 
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
@@ -565,6 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     qty: newQty,
                     unit: unit,
                     note: note,
+                    category_id: parseInt(catId),
                 }
             });
         } else {
@@ -620,42 +674,43 @@ document.addEventListener('DOMContentLoaded', () => {
         'fa-solid fa-receipt',
     ];
 
-    function renderIconSelector() {
+    function renderIconSelector(selectedIcon = null) {
         if (!iconSelectorGrid) return;
-        
-        // Récupérer les icônes déjà utilisées
+
+        // En mode édition, inclure l'icône actuelle même si déjà utilisée
         const usedIcons = new Set(DB.map(cat => cat.icon));
-        
-        // Filtrer les icônes disponibles
+        if (selectedIcon) usedIcons.delete(selectedIcon);
+
         const iconsToShow = availableIcons.filter(icon => !usedIcons.has(icon));
-        
+        // Ajouter l'icône actuelle en tête si elle n'est pas dans la liste
+        if (selectedIcon && !iconsToShow.includes(selectedIcon)) {
+            iconsToShow.unshift(selectedIcon);
+        }
+
         iconSelectorGrid.innerHTML = '';
-        
+
         iconsToShow.forEach(icon => {
             const iconBtn = document.createElement('div');
             iconBtn.className = 'icon-selector-item';
             iconBtn.dataset.icon = icon;
             iconBtn.innerHTML = `<i class="${icon}"></i>`;
-            
+
             iconBtn.addEventListener('click', () => {
-                // Désélectionner les autres
-                iconSelectorGrid.querySelectorAll('.icon-selector-item').forEach(item => {
-                    item.classList.remove('selected');
-                });
-                // Sélectionner celui-ci
+                iconSelectorGrid.querySelectorAll('.icon-selector-item').forEach(item => item.classList.remove('selected'));
                 iconBtn.classList.add('selected');
                 categoryIconInput.value = icon;
             });
-            
+
             iconSelectorGrid.appendChild(iconBtn);
         });
-        
-        // Sélectionner la première icône par défaut si aucune sélectionnée
-        if (iconsToShow.length > 0 && !categoryIconInput.value) {
-            const firstIcon = iconSelectorGrid.querySelector('.icon-selector-item');
-            if (firstIcon) {
-                firstIcon.classList.add('selected');
-                categoryIconInput.value = firstIcon.dataset.icon;
+
+        // Présélectionner l'icône voulue ou la première
+        const toSelect = selectedIcon || iconsToShow[0];
+        if (toSelect) {
+            const btn = iconSelectorGrid.querySelector(`[data-icon="${toSelect}"]`);
+            if (btn) {
+                btn.classList.add('selected');
+                categoryIconInput.value = toSelect;
             }
         }
     }
@@ -669,10 +724,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (categoryModalError) categoryModalError.style.display = 'none';
 
-        const data = await api('/api/categories', {
-            method: 'POST',
-            body: { name, icon }
-        });
+        let data;
+        if (editingCategoryId) {
+            data = await api(`/api/categories/${editingCategoryId}`, {
+                method: 'PUT',
+                body: { name, icon }
+            });
+        } else {
+            data = await api('/api/categories', {
+                method: 'POST',
+                body: { name, icon }
+            });
+        }
 
         if (data.error) {
             if (categoryModalError && categoryModalErrorText) {
@@ -682,9 +745,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        document.getElementById('category-name').value = '';
-        categoryIconInput.value = 'fa-solid fa-box';
-        renderIconSelector();
+        resetCategoryForm();
         closeModal(modalAddCategory);
         await loadData();
     });
@@ -813,6 +874,96 @@ document.addEventListener('DOMContentLoaded', () => {
             !sidebar.contains(e.target) &&
             !sidebarToggle.contains(e.target)) {
             sidebar.classList.remove('is-open');
+        }
+    });
+
+    /* ===========================================
+       DRAG-AND-DROP — Réorganisation des catégories
+    =========================================== */
+
+    function initDragAndDrop() {
+        const blocks = categoriesContainer.querySelectorAll('.category-block');
+        let dragSrc = null;
+
+        blocks.forEach(block => {
+            const header = block.querySelector('.category-header');
+            header.setAttribute('draggable', 'true');
+
+            header.addEventListener('dragstart', () => {
+                dragSrc = block;
+                setTimeout(() => block.classList.add('dragging'), 0);
+            });
+
+            header.addEventListener('dragend', () => {
+                block.classList.remove('dragging');
+                blocks.forEach(b => b.classList.remove('drag-over'));
+            });
+
+            block.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                if (block !== dragSrc) {
+                    blocks.forEach(b => b.classList.remove('drag-over'));
+                    block.classList.add('drag-over');
+                }
+            });
+
+            block.addEventListener('dragleave', () => {
+                block.classList.remove('drag-over');
+            });
+
+            block.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                block.classList.remove('drag-over');
+                if (!dragSrc || dragSrc === block) return;
+
+                // Réordonner dans le DOM
+                const allBlocks = [...categoriesContainer.querySelectorAll('.category-block')];
+                const srcIdx = allBlocks.indexOf(dragSrc);
+                const tgtIdx = allBlocks.indexOf(block);
+                if (srcIdx < tgtIdx) {
+                    block.after(dragSrc);
+                } else {
+                    block.before(dragSrc);
+                }
+
+                // Envoyer le nouvel ordre à l'API et mémoriser que l'ordre est custom
+                const newOrder = [...categoriesContainer.querySelectorAll('.category-block')].map((b, i) => ({
+                    id: parseInt(b.dataset.category),
+                    sort_order: i
+                }));
+                await api('/api/categories/reorder', { method: 'PUT', body: newOrder });
+                localStorage.setItem('categories_custom_ordered', '1');
+            });
+        });
+    }
+
+    /* ===========================================
+       SCROLL — Collapse des stats au scroll bas
+    =========================================== */
+
+    const stickyHeaderWrap = document.querySelector('.sticky-header-wrap');
+    let lastScrollY = 0;
+
+    window.addEventListener('scroll', () => {
+        const scrollY = window.scrollY;
+        if (stickyHeaderWrap && window.innerWidth < 1024) {
+            if (scrollY > lastScrollY && scrollY > 80) {
+                // Scroll vers le bas (contenu monte) → réduire les stats
+                stickyHeaderWrap.classList.add('stats-collapsed');
+            } else if (scrollY < 40) {
+                // Tout en haut → ré-afficher les stats
+                stickyHeaderWrap.classList.remove('stats-collapsed');
+            }
+        } else if (stickyHeaderWrap) {
+            stickyHeaderWrap.classList.remove('stats-collapsed');
+        }
+        lastScrollY = scrollY;
+    });
+
+    // Si la fenêtre est agrandie, s'assurer que les stats sont visibles
+    window.addEventListener('resize', () => {
+        if (stickyHeaderWrap && window.innerWidth >= 1024) {
+            stickyHeaderWrap.classList.remove('stats-collapsed');
         }
     });
 

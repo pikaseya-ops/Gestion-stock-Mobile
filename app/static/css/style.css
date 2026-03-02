@@ -226,10 +226,11 @@ input, select, button {
 .sticky-header-wrap {
     position: sticky;
     top: 0;
-    z-index: 50;
+    z-index: 100;
     background: var(--color-bg);
     padding-bottom: 20px;
     margin-bottom: 32px;
+    isolation: isolate;
 }
 
 .topbar {
@@ -411,25 +412,6 @@ input, select, button {
     cursor: pointer;
 }
 
-@media (max-width: 768px) {
-    .stat-card {
-        padding: 12px 14px;
-        gap: 8px;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-    }
-    
-    .stat-info {
-        align-items: center;
-    }
-    
-    .stat-value {
-        display: none;
-    }
-}
-
-
 .stat-icon {
     width: 44px; height: 44px;
     border-radius: var(--radius-md);
@@ -439,15 +421,6 @@ input, select, button {
     font-size: 1.1rem;
     flex-shrink: 0;
 }
-
-@media (max-width: 768px) {
-    .stat-icon {
-        width: 32px;
-        height: 32px;
-        font-size: 0.9rem;
-    }
-}
-
 
 .stat-info {
     flex: 1;
@@ -462,22 +435,10 @@ input, select, button {
     letter-spacing: -0.02em;
 }
 
-@media (max-width: 768px) {
-    .stat-value {
-        font-size: 1.1rem;
-    }
-}
-
 .stat-label {
     font-size: 0.8rem;
     color: var(--color-text-muted);
     font-weight: 500;
-}
-
-@media (max-width: 768px) {
-    .stat-label {
-        font-size: 0.7rem;
-    }
 }
 
 /* =============================================
@@ -634,7 +595,6 @@ input, select, button {
     border-radius: var(--radius-lg);
     overflow: hidden;
     transition: all var(--transition-fast);
-    cursor: pointer;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -1185,6 +1145,45 @@ input, select, button {
 }
 
 /* =============================================
+   Drag-and-drop catégories
+   ============================================= */
+
+.category-header {
+    cursor: grab;
+}
+
+.category-header:active {
+    cursor: grabbing;
+}
+
+.category-block.drag-over {
+    outline: 2px dashed var(--color-primary);
+    border-radius: var(--radius-lg);
+    background: var(--color-primary-bg);
+}
+
+.category-block.dragging {
+    opacity: 0.4;
+}
+
+/* =============================================
+   Header collapsible au scroll
+   ============================================= */
+
+.stats-grid {
+    transition: max-height 0.35s ease, opacity 0.3s ease, margin-bottom 0.3s ease;
+    max-height: 300px;
+    opacity: 1;
+    overflow: hidden;
+}
+
+.sticky-header-wrap.stats-collapsed .stats-grid {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
+}
+
+/* =============================================
    Animations
    ============================================= */
 
@@ -1210,10 +1209,25 @@ input, select, button {
     .topbar-right { width: 100%; }
     .search-box { flex: 1; }
     .search-box input { width: 100%; }
-    .stats-grid { 
+    .stats-grid {
         grid-template-columns: repeat(3, 1fr);
         gap: 8px;
     }
+    .stat-card {
+        padding: 12px 14px;
+        gap: 8px;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .stat-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+    }
+    .stat-info { align-items: center; }
+    .stat-value { display: none; }
+    .stat-label { font-size: 0.7rem; }
     .product-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
 }
 
