@@ -1149,11 +1149,9 @@ input, select, button {
    ============================================= */
 
 .category-header {
-    cursor: grab;
-}
-
-.category-header:active {
-    cursor: grabbing;
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    padding-left: 5px;
 }
 
 .category-block.drag-over {
