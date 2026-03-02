@@ -28,3 +28,9 @@ htmlcov/
 
 # Flask instance folder
 instance/ 
+
+# Stock.db
+stock.db
+
+# cloudflared
+cloudflared.exe

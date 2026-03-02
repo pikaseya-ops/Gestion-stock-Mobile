@@ -4,7 +4,7 @@ from models.db import db
 class Category(db.Model):
     __tablename__ = "categories"
 
-    id = db.Column(db.String, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String, nullable=False)
     icon = db.Column(db.String, nullable=False)
     color = db.Column(db.String, nullable=False)

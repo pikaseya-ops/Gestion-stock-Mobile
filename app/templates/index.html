@@ -52,7 +52,7 @@
                     </button>
                     <button class="btn btn-primary" id="btn-add-product">
                         <i class="fa-solid fa-plus"></i>
-                        <span>Ajouter</span>
+                        <span>Ajouter un produit</span>
                     </button>
                 </div>
             </header>
@@ -63,14 +63,6 @@
 
         <!-- Categories -->
         <section class="categories" id="categories-container"></section>
-
-        <!-- Add Category -->
-        <section class="add-category-section">
-            <button class="btn btn-dashed" id="btn-add-category">
-                <i class="fa-solid fa-folder-plus"></i>
-                <span>Ajouter une catégorie</span>
-            </button>
-        </section>
 
     </main>
 
@@ -132,13 +124,18 @@
                 <button class="btn-icon modal-close"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="modal-body">
+                <div class="form-group category-modal-error" id="category-modal-error" style="display: none;">
+                    <p class="text-error" id="category-modal-error-text"></p>
+                </div>
                 <div class="form-group">
                     <label for="category-name">Nom de la catégorie</label>
                     <input type="text" id="category-name" placeholder="Ex : Emballages">
                 </div>
                 <div class="form-group">
-                    <label for="category-icon">Icône Font Awesome</label>
-                    <input type="text" id="category-icon" placeholder="Ex : fa-solid fa-box">
+                    <label>Icône</label>
+                    <div class="icon-selector-grid" id="icon-selector-grid">
+                    </div>
+                    <input type="hidden" id="category-icon" value="fa-solid fa-box">
                 </div>
             </div>
             <div class="modal-footer">

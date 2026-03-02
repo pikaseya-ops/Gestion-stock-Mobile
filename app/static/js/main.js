@@ -1,5 +1,5 @@
 /* =============================================
-   StockAtelier — main.js
+   Poulstock — main.js
    Rendu dynamique via API Flask + SQLite
    ============================================= */
 
@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalAddProduct     = document.getElementById('modal-add-product');
     const modalAddCategory    = document.getElementById('modal-add-category-modal');
     const modalConfirmDelete  = document.getElementById('modal-confirm-delete');
+    const btnAddProduct       = document.getElementById('btn-add-product');
 
     const alertsPanel         = document.getElementById('alerts-panel');
     const alertsOverlay       = document.getElementById('alerts-overlay');
@@ -28,6 +29,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let deleteCallback = null;      // Callback pour la suppression confirmée
     let editingProductId = null;    // ID du produit en cours d'édition (null = ajout)
     let editingProductCurrentQty = null; // Qté actuelle du produit en cours d'édition
+
+    /* ===========================================
+       HELPERS — Utilitaires
+    =========================================== */
+
+    function hexToRgba(hex, opacity = 1) {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    }
 
     /* ===========================================
        API — Helpers
@@ -52,17 +64,33 @@ document.addEventListener('DOMContentLoaded', () => {
     =========================================== */
 
     function render() {
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            const addSection = mainContent.querySelector('.add-category-section');
+            if (addSection) addSection.remove();
+        }
         renderSidebarNav();
         renderStats();
         renderCategories();
         populateCategorySelect();
         updateAlertsBell();
+        updateAddProductButton();
+    }
+
+    function updateAddProductButton() {
+        const hasCategories = DB.length > 0;
+        if (btnAddProduct) {
+            btnAddProduct.disabled = !hasCategories;
+        }
     }
 
     /* ——— Sidebar Nav ——— */
     function renderSidebarNav() {
         const existingDynamic = sidebarNav.querySelectorAll('.nav-item[data-target]:not([data-target="all"])');
         existingDynamic.forEach(el => el.remove());
+        
+        const oldAddBtn = sidebarNav.querySelector('#btn-add-category');
+        if (oldAddBtn) oldAddBtn.remove();
 
         DB.forEach(cat => {
             const a = document.createElement('a');
@@ -73,14 +101,28 @@ document.addEventListener('DOMContentLoaded', () => {
             sidebarNav.appendChild(a);
         });
 
+        const addCategoryBtn = document.createElement('button');
+        addCategoryBtn.id = 'btn-add-category';
+        addCategoryBtn.className = 'nav-item';
+        addCategoryBtn.innerHTML = `<i class="fa-solid fa-folder-plus"></i><span>Ajouter une catégorie</span>`;
+        addCategoryBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (window.innerWidth <= 768) sidebar.classList.remove('is-open');
+            const errEl = document.getElementById('category-modal-error');
+            if (errEl) errEl.style.display = 'none';
+            renderIconSelector();
+            openModal(modalAddCategory);
+        });
+        sidebarNav.appendChild(addCategoryBtn);
+
         bindNavClicks();
     }
 
     function bindNavClicks() {
-        sidebarNav.querySelectorAll('.nav-item').forEach(item => {
+        sidebarNav.querySelectorAll('.nav-item:not(#btn-add-category)').forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
-                sidebarNav.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                sidebarNav.querySelectorAll('.nav-item:not(#btn-add-category)').forEach(n => n.classList.remove('active'));
                 item.classList.add('active');
 
                 const target = item.dataset.target;
@@ -97,20 +139,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
         DB.forEach(cat => {
             const totalProducts = cat.products.length;
+            const color = cat.color || '#C0574F';
 
             const card = document.createElement('div');
             card.className = 'stat-card';
-            card.dataset.color = cat.color;
             card.dataset.category = cat.id;
-            card.innerHTML = `
-                <div class="stat-icon">
-                    <i class="${cat.icon}"></i>
-                </div>
-                <div class="stat-info">
-                    <span class="stat-value">${totalProducts}</span>
-                    <span class="stat-label">${cat.name}</span>
-                </div>
+            card.style.position = 'relative';
+            
+            const colorBar = document.createElement('div');
+            colorBar.style.position = 'absolute';
+            colorBar.style.top = '0';
+            colorBar.style.left = '0';
+            colorBar.style.width = '4px';
+            colorBar.style.height = '100%';
+            colorBar.style.borderRadius = 'var(--radius-sm) 0 0 var(--radius-sm)';
+            colorBar.style.background = color;
+            
+            const iconEl = document.createElement('div');
+            iconEl.className = 'stat-icon';
+            iconEl.style.background = hexToRgba(color, 0.3);
+            iconEl.style.color = color;
+            iconEl.innerHTML = `<i class="${cat.icon}"></i>`;
+            
+            const infoEl = document.createElement('div');
+            infoEl.className = 'stat-info';
+            infoEl.innerHTML = `
+                <span class="stat-value">${totalProducts}</span>
+                <span class="stat-label">${cat.name}</span>
             `;
+            
+            card.appendChild(colorBar);
+            card.appendChild(iconEl);
+            card.appendChild(infoEl);
 
             card.addEventListener('click', () => {
                 sidebarNav.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -137,13 +197,21 @@ document.addEventListener('DOMContentLoaded', () => {
             // Header
             const header = document.createElement('div');
             header.className = 'category-header';
+            const color = cat.color || '#C0574F';
+
+            const dot = document.createElement('span');
+            dot.className = 'category-dot';
+            dot.style.background = color;
+
             header.innerHTML = `
                 <div class="category-title">
-                    <span class="category-dot" data-color="${cat.color}"></span>
                     <h2>${cat.name}</h2>
                     <span class="category-count">${cat.products.length} produit${cat.products.length > 1 ? 's' : ''}</span>
                 </div>
             `;
+
+            const titleDiv = header.querySelector('.category-title');
+            titleDiv.insertBefore(dot, titleDiv.firstChild);
 
             // Product grid
             const grid = document.createElement('div');
@@ -217,11 +285,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const qtyNum = product.qty !== null ? product.qty : 0;
         const qtyText = product.qty !== null ? product.qty : '?';
         const unitText = product.unit ? ' ' + product.unit : '';
+        const color = category.color || '#C0574F';
+
+        const headerEl = document.createElement('div');
+        headerEl.className = 'product-card-header';
+        headerEl.style.background = hexToRgba(color, 0.3);
+        headerEl.style.color = color;
+        headerEl.innerHTML = `<i class="${category.icon}"></i>`;
 
         card.innerHTML = `
-            <div class="product-card-header" data-color="${category.color}">
-                <i class="${category.icon}"></i>
-            </div>
             <div class="product-card-body">
                 <h3>${product.name}</h3>
                 <div class="qty-inline">
@@ -239,6 +311,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="btn-icon btn-icon--danger btn-delete" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
             </div>
         `;
+        
+        card.insertBefore(headerEl, card.firstChild);
 
         // État local de la quantité
         let localQty = qtyNum;
@@ -364,7 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
             blocks.forEach(b => b.style.display = '');
         } else {
             blocks.forEach(b => {
-                b.style.display = b.dataset.category === categoryId ? '' : 'none';
+                b.style.display = String(b.dataset.category) === String(categoryId) ? '' : 'none';
             });
             const target = document.getElementById(`category-${categoryId}`);
             if (target) {
@@ -463,15 +537,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Bouton "Ajouter" topbar
-    document.getElementById('btn-add-product')?.addEventListener('click', () => {
+    btnAddProduct?.addEventListener('click', () => {
+        if (DB.length === 0) return; // Ne rien faire si pas de catégories
         resetProductForm();
         openModal(modalAddProduct);
     });
 
-    // Bouton "Ajouter catégorie"
-    document.getElementById('btn-add-category')?.addEventListener('click', () => {
-        openModal(modalAddCategory);
-    });
 
     // Confirmer ajout / modification produit
     document.getElementById('btn-confirm-add-product')?.addEventListener('click', async () => {
@@ -516,24 +587,104 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Confirmer ajout catégorie
+    const categoryModalError = document.getElementById('category-modal-error');
+    const categoryModalErrorText = document.getElementById('category-modal-error-text');
+    const iconSelectorGrid = document.getElementById('icon-selector-grid');
+    const categoryIconInput = document.getElementById('category-icon');
+
+    // Liste d'icônes pertinentes pour gestion de stock
+    const availableIcons = [
+        'fa-solid fa-box',
+        'fa-solid fa-box-archive',
+        'fa-solid fa-jar',
+        'fa-solid fa-cart-shopping',
+        'fa-solid fa-tags',
+        'fa-solid fa-tag',
+        'fa-solid fa-warehouse',
+        'fa-solid fa-pallet',
+        'fa-solid fa-cube',
+        'fa-solid fa-cubes',
+        'fa-solid fa-basket-shopping',
+        'fa-solid fa-shopping-bag',
+        'fa-solid fa-dolly',
+        'fa-solid fa-boxes-stacked',
+        'fa-solid fa-tape',
+        'fa-solid fa-scissors',
+        'fa-solid fa-toolbox',
+        'fa-solid fa-wrench',
+        'fa-solid fa-screwdriver-wrench',
+        'fa-solid fa-hammer',
+        'fa-solid fa-clipboard-list',
+        'fa-solid fa-list-check',
+        'fa-solid fa-file-invoice',
+        'fa-solid fa-receipt',
+    ];
+
+    function renderIconSelector() {
+        if (!iconSelectorGrid) return;
+        
+        // Récupérer les icônes déjà utilisées
+        const usedIcons = new Set(DB.map(cat => cat.icon));
+        
+        // Filtrer les icônes disponibles
+        const iconsToShow = availableIcons.filter(icon => !usedIcons.has(icon));
+        
+        iconSelectorGrid.innerHTML = '';
+        
+        iconsToShow.forEach(icon => {
+            const iconBtn = document.createElement('div');
+            iconBtn.className = 'icon-selector-item';
+            iconBtn.dataset.icon = icon;
+            iconBtn.innerHTML = `<i class="${icon}"></i>`;
+            
+            iconBtn.addEventListener('click', () => {
+                // Désélectionner les autres
+                iconSelectorGrid.querySelectorAll('.icon-selector-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                // Sélectionner celui-ci
+                iconBtn.classList.add('selected');
+                categoryIconInput.value = icon;
+            });
+            
+            iconSelectorGrid.appendChild(iconBtn);
+        });
+        
+        // Sélectionner la première icône par défaut si aucune sélectionnée
+        if (iconsToShow.length > 0 && !categoryIconInput.value) {
+            const firstIcon = iconSelectorGrid.querySelector('.icon-selector-item');
+            if (firstIcon) {
+                firstIcon.classList.add('selected');
+                categoryIconInput.value = firstIcon.dataset.icon;
+            }
+        }
+    }
+
+
     document.getElementById('btn-confirm-add-category')?.addEventListener('click', async () => {
         const name = document.getElementById('category-name').value.trim();
-        const icon = document.getElementById('category-icon').value.trim() || 'fa-solid fa-box';
+        const icon = categoryIconInput.value.trim() || 'fa-solid fa-box';
 
         if (!name) return;
 
-        // Palette de couleurs de secours
-        const fallbackColors = ['conserves', 'sousvides', 'consommables', 'epices', 'sabots', 'bottes'];
-        const color = fallbackColors[DB.length % fallbackColors.length];
+        if (categoryModalError) categoryModalError.style.display = 'none';
 
-        await api('/api/categories', {
+        const data = await api('/api/categories', {
             method: 'POST',
-            body: { name, icon, color }
+            body: { name, icon }
         });
 
-        document.getElementById('category-name').value = '';
-        document.getElementById('category-icon').value = '';
+        if (data.error) {
+            if (categoryModalError && categoryModalErrorText) {
+                categoryModalErrorText.textContent = data.error;
+                categoryModalError.style.display = 'block';
+            }
+            return;
+        }
 
+        document.getElementById('category-name').value = '';
+        categoryIconInput.value = 'fa-solid fa-box';
+        renderIconSelector();
         closeModal(modalAddCategory);
         await loadData();
     });
