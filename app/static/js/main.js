@@ -331,11 +331,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         validateBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
+            const savedProductId = product.id;
             await api(`/api/products/${product.id}`, {
                 method: 'PUT',
                 body: { name: product.name, qty: localQty, unit: product.unit || '', note: product.note || '' }
             });
             await loadData();
+            const updatedCard = document.querySelector(`[data-product-id="${savedProductId}"]`);
+            if (updatedCard) updatedCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
         });
 
         // Bouton crayon → modifier le produit
