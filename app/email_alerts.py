@@ -1,8 +1,11 @@
 """Envoi d'email quand un produit passe sous le seuil de stock"""
+import logging
 import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
+logger = logging.getLogger(__name__)
 
 
 def send_low_stock_alert(product, category):
@@ -14,6 +17,12 @@ def send_low_stock_alert(product, category):
     user = os.getenv('SMTP_USER', '').strip()
     password = os.getenv('SMTP_PASSWORD', '')
     if not to_email or not host or not user or not password:
+        logger.warning(
+            "Alerte stock faible : envoi ignoré (config SMTP incomplète: ALERT_EMAIL=%s, SMTP_HOST=%s, SMTP_USER=%s)",
+            "ok" if to_email else "manquant",
+            "ok" if host else "manquant",
+            "ok" if user else "manquant",
+        )
         return
 
     port = int(os.getenv('SMTP_PORT', '587'))
@@ -39,9 +48,11 @@ def send_low_stock_alert(product, category):
     msg.attach(MIMEText(body, 'plain', 'utf-8'))
 
     try:
+        logger.info("Envoi alerte stock faible : %s -> %s", product.name, to_email)
         with smtplib.SMTP(host, port) as server:
             server.starttls()
             server.login(user, password)
             server.sendmail(from_email, [to_email], msg.as_string())
-    except Exception:
-        pass  # Ne pas faire échouer la requête API
+        logger.info("Alerte stock faible envoyée avec succès pour %s", product.name)
+    except Exception as e:
+        logger.exception("Échec envoi alerte stock faible pour %s : %s", product.name, e)
