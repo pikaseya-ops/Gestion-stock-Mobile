@@ -3,6 +3,7 @@ import random
 import colorsys
 from flask import Blueprint, request, jsonify
 from models import db, Category, Product
+from email_alerts import send_low_stock_alert
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -240,6 +241,13 @@ def create_product():
     )
     db.session.add(product)
     db.session.commit()
+
+    threshold_val = product.low_stock_threshold if product.low_stock_threshold is not None else 5
+    if product.qty is not None and product.qty <= threshold_val:
+        send_low_stock_alert(product, cat)
+        product.low_stock_alert_sent = True
+        db.session.commit()
+
     return jsonify({
         'id': prod_id, 'name': name, 'qty': qty, 'unit': unit, 'note': note, 'group': grp
     }), 201
@@ -278,6 +286,19 @@ def update_product(prod_id):
         if cat:
             product.category_id = int(new_cat_id)
     db.session.commit()
+
+    cat = product.category
+    threshold_val = product.low_stock_threshold if product.low_stock_threshold is not None else 5
+    if product.qty is not None and product.qty <= threshold_val:
+        if not product.low_stock_alert_sent:
+            send_low_stock_alert(product, cat)
+            product.low_stock_alert_sent = True
+            db.session.commit()
+    else:
+        if product.low_stock_alert_sent:
+            product.low_stock_alert_sent = False
+            db.session.commit()
+
     return jsonify({
         'id': prod_id, 'name': product.name, 'qty': product.qty,
         'unit': product.unit, 'note': product.note, 'group': product.grp
@@ -297,6 +318,18 @@ def update_product_threshold(prod_id):
         return jsonify({'error': 'Produit introuvable'}), 404
     product.low_stock_threshold = threshold
     db.session.commit()
+
+    cat = product.category
+    if product.qty is not None and product.qty <= threshold:
+        if not product.low_stock_alert_sent:
+            send_low_stock_alert(product, cat)
+            product.low_stock_alert_sent = True
+            db.session.commit()
+    else:
+        if product.low_stock_alert_sent:
+            product.low_stock_alert_sent = False
+            db.session.commit()
+
     return jsonify({'success': True, 'low_stock_threshold': threshold})
 
 

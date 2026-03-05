@@ -15,6 +15,10 @@ def init_db():
         with db.engine.connect() as conn:
             conn.execute(text('ALTER TABLE products ADD COLUMN low_stock_threshold INTEGER DEFAULT 5'))
             conn.commit()
+    if 'low_stock_alert_sent' not in product_cols:
+        with db.engine.connect() as conn:
+            conn.execute(text('ALTER TABLE products ADD COLUMN low_stock_alert_sent INTEGER DEFAULT 0'))
+            conn.commit()
 
     # Migration : ajouter sort_order aux catégories si la colonne est absente
     cat_cols = [col['name'] for col in inspector.get_columns('categories')]
