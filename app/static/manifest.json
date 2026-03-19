@@ -1,0 +1,35 @@
+{
+    "name": "PoulStock",
+    "short_name": "PoulStock",
+    "description": "Application de stockage de poule",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#dff5cf",
+    "theme_color": "#5B8C3E",
+    "orientation": "portrait",
+    "scope": "/",
+    "lang": "fr",
+    "categories": ["poultry", "stock", "utilities"],
+    "icons": [
+      {
+        "src": "/static/img/icon-192x192.png",
+        "sizes": "192x192",
+        "type": "image/png",
+        "purpose": "any maskable"
+      },
+      {
+        "src": "/static/img/icon-512x512.png",
+        "sizes": "512x512",
+        "type": "image/png",
+        "purpose": "any maskable"
+      }
+    ],
+    "related_applications": [],
+    "prefer_related_applications": false,
+    "edge_side_panel": {
+      "preferred_width": 400
+    },
+    "launch_handler": {
+      "client_mode": "navigate-existing"
+    }
+  }

@@ -41,6 +41,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return `rgba(${r}, ${g}, ${b}, ${opacity})`;
     }
 
+    function smoothScrollTo(el) {
+        if (!el) return;
+        setTimeout(() => {
+            const rect = el.getBoundingClientRect();
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const targetY = scrollTop + rect.top - (window.innerHeight / 2) + (rect.height / 2);
+            try {
+                window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+            } catch (_) {
+                window.scrollTo(0, Math.max(0, targetY));
+            }
+        }, 80);
+    }
+
     /* ===========================================
        API — Helpers
     =========================================== */
@@ -337,8 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: { name: product.name, qty: localQty, unit: product.unit || '', note: product.note || '' }
             });
             await loadData();
-            const updatedCard = document.querySelector(`[data-product-id="${savedProductId}"]`);
-            if (updatedCard) updatedCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            smoothScrollTo(document.querySelector(`[data-product-id="${savedProductId}"]`));
         });
 
         // Bouton crayon → modifier le produit
