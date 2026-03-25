@@ -1,0 +1,10 @@
+[
+    {
+        "version": "1.0.0",
+        "date": "25/03/2026",
+        "changes": [
+            "Ajout du système de changelog avec détection automatique des mises à jour",
+            "Ajout de la fonctionnalité de suppression de catégorie"
+        ]
+    }
+]

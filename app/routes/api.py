@@ -1,3 +1,5 @@
+import os
+import json
 import uuid
 import random
 import colorsys
@@ -5,7 +7,23 @@ from flask import Blueprint, request, jsonify
 from models import db, Category, Product
 from email_alerts import send_low_stock_alert
 
+CHANGELOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'changelog.json')
+
 api_bp = Blueprint('api', __name__, url_prefix='/api')
+
+
+@api_bp.route('/version', methods=['GET'])
+def get_version():
+    return jsonify({'sha': os.getenv('COMMIT_SHA', 'dev')})
+
+
+@api_bp.route('/changelog', methods=['GET'])
+def get_changelog():
+    try:
+        with open(CHANGELOG_PATH, 'r', encoding='utf-8') as f:
+            return jsonify(json.load(f))
+    except Exception:
+        return jsonify([])
 
 
 def _generate_id():

@@ -65,6 +65,8 @@ jobs:
           context: .
           file: ./packages/Dockerfile
           push: true
+          build-args: |
+            COMMIT_SHA=${{ github.sha }}
           tags: |
             ghcr.io/${{ env.IMAGE_LOWER }}:latest
             ghcr.io/${{ env.IMAGE_LOWER }}:${{ env.BRANCH_NAME }}
