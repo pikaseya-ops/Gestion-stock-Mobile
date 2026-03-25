@@ -1,6 +1,10 @@
 # Use official Python image as base
 FROM python:3.12-alpine3.21
 
+# Set commit SHA as an argument
+ARG COMMIT_SHA=dev
+ENV COMMIT_SHA=${COMMIT_SHA}
+
 # Set working directory
 WORKDIR /app
 

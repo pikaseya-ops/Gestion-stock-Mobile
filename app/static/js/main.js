@@ -904,9 +904,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* ===========================================
+       CHANGELOG — Détection de mise à jour
+    =========================================== */
+
+    const modalChangelog = document.getElementById('modal-changelog');
+    const changelogBody = document.getElementById('changelog-body');
+
+    async function checkForUpdate() {
+        try {
+            const [versionData, changelog] = await Promise.all([
+                api('/api/version'),
+                api('/api/changelog')
+            ]);
+
+            const currentSha = versionData.sha;
+            const storedSha = localStorage.getItem('poulstock_sha');
+
+            if (!storedSha) {
+                localStorage.setItem('poulstock_sha', currentSha);
+                return;
+            }
+
+            if (storedSha === currentSha) return;
+
+            localStorage.setItem('poulstock_sha', currentSha);
+
+            if (!changelog || changelog.length === 0) return;
+
+            const latest = changelog[0];
+            changelogBody.innerHTML = `
+                <div>
+                    <span class="changelog-date">${latest.date}</span>
+                </div>
+                <ul class="changelog-list">
+                    ${latest.changes.map(c => `<li><i class="fa-solid fa-check"></i>${c}</li>`).join('')}
+                </ul>
+            `;
+            openModal(modalChangelog);
+        } catch (_) {}
+    }
+
+    /* ===========================================
        INIT — Charger les données depuis l'API
     =========================================== */
 
     loadData();
+    checkForUpdate();
 
 });
