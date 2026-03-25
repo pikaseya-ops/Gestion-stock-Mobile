@@ -1,10 +1,10 @@
 [
     {
-        "version": "1.0.0",
         "date": "25/03/2026",
         "changes": [
             "Ajout du système de changelog avec détection automatique des mises à jour",
-            "Ajout de la fonctionnalité de suppression de catégorie"
+            "Ajout fonctionnel des paramètres",
+            "Ajout d'un paramètres permettant de ne pas afficher les notifications de mise à jour"
         ]
     }
 ]

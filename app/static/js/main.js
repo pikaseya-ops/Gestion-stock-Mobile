@@ -904,6 +904,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* ===========================================
+       PARAMÈTRES
+    =========================================== */
+
+    const SETTINGS_KEY = 'poulstock_settings';
+    const modalSettings = document.getElementById('modal-settings');
+    const settingUpdateNotif = document.getElementById('setting-update-notif');
+
+    function loadSettings() {
+        try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch (_) { return {}; }
+    }
+
+    function saveSetting(key, value) {
+        const settings = loadSettings();
+        settings[key] = value;
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    }
+
+    function initSettings() {
+        const settings = loadSettings();
+        const updateNotif = settings.update_notif !== false;
+        settingUpdateNotif.checked = updateNotif;
+    }
+
+    settingUpdateNotif?.addEventListener('change', () => {
+        saveSetting('update_notif', settingUpdateNotif.checked);
+    });
+
+    document.getElementById('btn-settings')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (window.innerWidth <= 768) sidebar.classList.remove('is-open');
+        initSettings();
+        openModal(modalSettings);
+    });
+
+    /* ===========================================
        CHANGELOG — Détection de mise à jour
     =========================================== */
 
@@ -911,6 +946,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const changelogBody = document.getElementById('changelog-body');
 
     async function checkForUpdate() {
+        const settings = loadSettings();
+        if (settings.update_notif === false) return;
+
         try {
             const [versionData, changelog] = await Promise.all([
                 api('/api/version'),
