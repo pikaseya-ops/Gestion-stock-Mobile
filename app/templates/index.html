@@ -22,7 +22,7 @@
         </nav>
 
         <div class="sidebar-footer">
-            <a href="#" class="nav-item">
+            <a href="#" class="nav-item" id="btn-settings">
                 <i class="fa-solid fa-gear"></i>
                 <span>Paramètres</span>
             </a>
@@ -139,6 +139,31 @@
             <div class="modal-footer">
                 <button class="btn btn-ghost modal-close">Annuler</button>
                 <button class="btn btn-primary" id="btn-confirm-add-category">Créer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL — Paramètres ========== -->
+    <div class="modal-overlay" id="modal-settings">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-gear"></i> Paramètres</h2>
+                <button class="btn-icon modal-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-label">Notifications de mise à jour</span>
+                        <span class="setting-desc">Afficher les nouveautés après chaque mise à jour de l'application</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="setting-update-notif" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary modal-close">Fermer</button>
             </div>
         </div>
     </div>
