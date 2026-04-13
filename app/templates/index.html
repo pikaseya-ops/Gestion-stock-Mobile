@@ -40,6 +40,9 @@
                 </button>
                 <div class="topbar-left">
                     <h1 class="page-title">Gestion de stock</h1>
+                    <button class="btn-bell" id="btn-refresh" title="Rafraîchir">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
                 </div>
                 <div class="topbar-right">
                     <div class="search-box">
@@ -98,6 +101,10 @@
                         <input type="text" id="product-unit" placeholder="Ex : paires, rlx…">
                     </div>
                 </div>
+                <div class="form-group" id="product-qty-remove-row" style="display:none;">
+                    <label for="product-qty-remove">Qté à retirer</label>
+                    <input type="number" id="product-qty-remove" placeholder="Ex : 10" min="0">
+                </div>
                 <div class="form-group">
                     <label for="product-note">Note (optionnel)</label>
                     <input type="text" id="product-note" placeholder="Ex : 2 à 5 kg">
@@ -110,6 +117,9 @@
             <div class="modal-footer">
                 <button class="btn btn-ghost modal-close">Annuler</button>
                 <button class="btn btn-primary" id="btn-confirm-add-product">Ajouter</button>
+            </div>
+            <div id="modal-product-delete-row" style="display:none; padding: 0 24px 20px;">
+                <button class="btn btn-danger" id="btn-delete-product-modal" style="width:100%"><i class="fa-solid fa-trash"></i> Supprimer le produit</button>
             </div>
         </div>
     </div>

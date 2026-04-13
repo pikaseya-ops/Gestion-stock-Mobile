@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (_) {
                 window.scrollTo(0, Math.max(0, targetY));
             }
-        }, 80);
+        }, 200);
     }
 
     /* ===========================================
@@ -367,6 +367,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('product-unit').value = product.unit || '';
             document.getElementById('product-note').value = product.note || '';
             document.getElementById('product-category').value = category.id;
+            document.getElementById('modal-product-delete-row').style.display = '';
+            document.getElementById('product-qty-remove-row').style.display = '';
+            document.getElementById('product-qty-remove').value = '';
             openModal(modalAddProduct);
         });
 
@@ -533,6 +536,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('product-qty').value = '';
         document.getElementById('product-unit').value = '';
         document.getElementById('product-note').value = '';
+        document.getElementById('modal-product-delete-row').style.display = 'none';
+        document.getElementById('product-qty-remove-row').style.display = 'none';
+        document.getElementById('product-qty-remove').value = '';
     }
 
     // Fermer les modales
@@ -561,21 +567,43 @@ document.addEventListener('DOMContentLoaded', () => {
         openModal(modalAddProduct);
     });
 
+    // Bouton rafraîchir
+    document.getElementById('btn-refresh')?.addEventListener('click', () => {
+        loadData();
+    });
+
+    // Bouton supprimer depuis la modale édition produit
+    document.getElementById('btn-delete-product-modal')?.addEventListener('click', () => {
+        if (!editingProductId) return;
+        const productId = editingProductId;
+        closeModal(modalAddProduct);
+        resetProductForm();
+        openDeleteConfirm(
+            `Supprimer ce produit ?`,
+            async () => {
+                await api(`/api/products/${productId}`, { method: 'DELETE' });
+                await loadData();
+            }
+        );
+    });
+
 
     // Confirmer ajout / modification produit
     document.getElementById('btn-confirm-add-product')?.addEventListener('click', async () => {
-        const name  = document.getElementById('product-name').value.trim();
-        const qty   = document.getElementById('product-qty').value.trim();
-        const unit  = document.getElementById('product-unit').value.trim();
-        const note  = document.getElementById('product-note').value.trim();
-        const catId = document.getElementById('product-category').value;
+        const name      = document.getElementById('product-name').value.trim();
+        const qty       = document.getElementById('product-qty').value.trim();
+        const qtyRemove = document.getElementById('product-qty-remove').value.trim();
+        const unit      = document.getElementById('product-unit').value.trim();
+        const note      = document.getElementById('product-note').value.trim();
+        const catId     = document.getElementById('product-category').value;
 
         if (!name) return;
 
         if (editingProductId) {
-            // Mode édition → PUT (la qty saisie s'additionne au stock existant)
-            const addedQty = qty !== '' ? parseInt(qty) : 0;
-            const newQty = editingProductCurrentQty + addedQty;
+            // Mode édition → PUT (ajout et/ou retrait de stock)
+            const addedQty   = qty !== '' ? parseInt(qty) : 0;
+            const removedQty = qtyRemove !== '' ? parseInt(qtyRemove) : 0;
+            const newQty = Math.max(0, editingProductCurrentQty + addedQty - removedQty);
             await api(`/api/products/${editingProductId}`, {
                 method: 'PUT',
                 body: {
@@ -600,9 +628,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        const savedProductId = editingProductId;
         resetProductForm();
         closeModal(modalAddProduct);
         await loadData();
+        if (savedProductId) {
+            smoothScrollTo(document.querySelector(`[data-product-id="${savedProductId}"]`));
+        }
     });
 
     // Confirmer ajout catégorie
