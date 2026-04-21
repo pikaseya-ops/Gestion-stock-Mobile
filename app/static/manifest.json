@@ -1,7 +1,7 @@
 {
-    "name": "PoulStock",
-    "short_name": "PoulStock",
-    "description": "Application de stockage de poule",
+    "name": "PharmaStock",
+    "short_name": "PharmaStock",
+    "description": "Gestion de stock et commandes pour pharmacie",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#dff5cf",
@@ -9,7 +9,7 @@
     "orientation": "portrait",
     "scope": "/",
     "lang": "fr",
-    "categories": ["poultry", "stock", "utilities"],
+    "categories": ["pharmacy", "stock", "utilities"],
     "icons": [
       {
         "src": "/static/img/icon-192x192.png",

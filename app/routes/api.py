@@ -5,6 +5,7 @@ import random
 import colorsys
 from flask import Blueprint, request, jsonify
 from models import db, Category, Product
+from models.order import Order
 from email_alerts import send_low_stock_alert
 
 CHANGELOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'changelog.json')
@@ -118,6 +119,10 @@ def get_all_data():
                     'note': p.note if p.note else None,
                     'group': p.grp if p.grp else None,
                     'low_stock_threshold': p.low_stock_threshold if p.low_stock_threshold is not None else 5,
+                    'supplier': p.supplier or '',
+                    'reference': p.reference or '',
+                    'order_qty': p.order_qty if p.order_qty is not None else 1,
+                    'pending_orders': Order.query.filter_by(product_id=p.id, status='en_attente').count(),
                 }
                 for p in sorted(cat.products, key=lambda x: x.id)
             ]
@@ -236,6 +241,9 @@ def create_product():
     unit = data.get('unit', '').strip()
     note = data.get('note', '').strip()
     grp = data.get('group', '').strip()
+    supplier = data.get('supplier', '').strip()
+    reference = data.get('reference', '').strip()
+    order_qty = data.get('order_qty', 1)
 
     if not name or category_id is None:
         return jsonify({'error': 'Le nom et la catégorie sont requis'}), 400
@@ -256,6 +264,9 @@ def create_product():
         note=note or '',
         grp=grp or '',
         low_stock_threshold=threshold,
+        supplier=supplier or '',
+        reference=reference or '',
+        order_qty=order_qty or 1,
     )
     db.session.add(product)
     db.session.commit()
@@ -296,6 +307,12 @@ def update_product(prod_id):
     product.unit = data.get('unit', product.unit).strip()
     product.note = data.get('note', product.note).strip()
     product.grp = data.get('group', product.grp).strip()
+    if 'supplier' in data:
+        product.supplier = data['supplier'].strip()
+    if 'reference' in data:
+        product.reference = data['reference'].strip()
+    if 'order_qty' in data:
+        product.order_qty = data['order_qty'] or 1
     if 'low_stock_threshold' in data:
         product.low_stock_threshold = data['low_stock_threshold']
     if 'category_id' in data:

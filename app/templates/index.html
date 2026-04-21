@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}StockAtelier — Tableau de bord{% endblock %}
+{% block title %}PharmaStock — Tableau de bord{% endblock %}
 
 {% block content %}
 
@@ -9,7 +9,7 @@
         <div class="sidebar-header">
             <div class="logo">
                 <img class="logo-icon" src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo">
-                <span class="logo-text">PoulStock</span>
+                <span class="logo-text">PharmaStock</span>
             </div>
         </div>
 
@@ -17,6 +17,11 @@
             <a href="#" class="nav-item active" data-target="all">
                 <i class="fa-solid fa-chart-pie"></i>
                 <span>Vue d'ensemble</span>
+            </a>
+            <a href="#" class="nav-item" id="btn-orders">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span>Commandes</span>
+                <span class="orders-badge" id="orders-badge" style="display:none">0</span>
             </a>
             <!-- Nav items générés dynamiquement -->
         </nav>
@@ -32,7 +37,6 @@
     <!-- ========== MAIN CONTENT ========== -->
     <main class="main-content">
 
-        <!-- Zone sticky : topbar + stats -->
         <div class="sticky-header-wrap">
             <header class="topbar">
                 <button id="sidebar-toggle" class="sidebar-toggle">
@@ -59,25 +63,78 @@
                     </button>
                 </div>
             </header>
+        </div>
 
-            </div>
-
-        <!-- Categories -->
         <section class="categories" id="categories-container"></section>
 
     </main>
 
-    <!-- ========== PANNEAU LATÉRAL — À commander ========== -->
+    <!-- ========== PANNEAU LATÉRAL — À commander (alertes stock) ========== -->
     <div class="alerts-overlay" id="alerts-overlay"></div>
     <aside class="alerts-panel" id="alerts-panel">
         <div class="alerts-panel-header">
-            <h2><i class="fa-solid fa-cart-shopping"></i> À commander</h2>
+            <h2><i class="fa-solid fa-triangle-exclamation"></i> Stocks faibles</h2>
             <button class="btn-icon" id="alerts-panel-close"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="alerts-panel-body" id="alerts-panel-body">
             <!-- Contenu généré dynamiquement -->
         </div>
     </aside>
+
+    <!-- ========== PANNEAU LATÉRAL — Commandes ========== -->
+    <div class="orders-overlay" id="orders-overlay"></div>
+    <aside class="orders-panel" id="orders-panel">
+        <div class="orders-panel-header">
+            <h2><i class="fa-solid fa-cart-shopping"></i> Commandes</h2>
+            <button class="btn-icon" id="orders-panel-close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="pennylane-status-bar" style="display:none; padding: 0 16px 12px;"></div>
+        <div class="orders-panel-body" id="orders-panel-body">
+            <!-- Contenu généré dynamiquement -->
+        </div>
+    </aside>
+
+    <!-- ========== MODAL — Créer une commande ========== -->
+    <div class="modal-overlay" id="modal-order">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-cart-plus"></i> Nouvelle commande</h2>
+                <button class="btn-icon modal-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Produit</label>
+                    <input type="text" id="order-product-name" readonly style="background:var(--color-surface-hover); cursor:default;">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="order-quantity">Quantité à commander</label>
+                        <input type="number" id="order-quantity" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="order-supplier">Fournisseur</label>
+                        <input type="text" id="order-supplier" placeholder="Ex : LaboraMed">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="order-notes">Notes (optionnel)</label>
+                    <input type="text" id="order-notes" placeholder="Ex : Urgent, délai 48h">
+                </div>
+                <div id="order-pennylane-info" style="display:none; margin-top: 8px;">
+                    <div class="pennylane-status configured">
+                        <i class="fa-solid fa-plug"></i>
+                        Pennylane connecté — la commande sera envoyée automatiquement
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost modal-close">Annuler</button>
+                <button class="btn btn-primary" id="btn-confirm-order">
+                    <i class="fa-solid fa-paper-plane"></i> Créer la commande
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- ========== MODAL — Add / Edit Product ========== -->
     <div class="modal-overlay" id="modal-add-product">
@@ -89,25 +146,41 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label for="product-name">Nom du produit</label>
-                    <input type="text" id="product-name" placeholder="Ex : Terrine volaille">
+                    <input type="text" id="product-name" placeholder="Ex : Boîtes de rangement">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="product-qty" id="product-qty-label">Quantité</label>
-                        <input type="number" id="product-qty" placeholder="Ex : 245">
+                        <input type="number" id="product-qty" placeholder="Ex : 100">
                     </div>
                     <div class="form-group">
                         <label for="product-unit">Unité</label>
-                        <input type="text" id="product-unit" placeholder="Ex : paires, rlx…">
+                        <input type="text" id="product-unit" placeholder="Ex : boîtes, rouleaux…">
                     </div>
                 </div>
                 <div class="form-group" id="product-qty-remove-row" style="display:none;">
                     <label for="product-qty-remove">Qté à retirer</label>
                     <input type="number" id="product-qty-remove" placeholder="Ex : 10" min="0">
                 </div>
-                <div class="form-group">
-                    <label for="product-note">Note (optionnel)</label>
-                    <input type="text" id="product-note" placeholder="Ex : 2 à 5 kg">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="product-supplier">Fournisseur</label>
+                        <input type="text" id="product-supplier" placeholder="Ex : LaboraMed">
+                    </div>
+                    <div class="form-group">
+                        <label for="product-reference">Référence</label>
+                        <input type="text" id="product-reference" placeholder="Ex : REF-001">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="product-order-qty">Qté à commander (défaut)</label>
+                        <input type="number" id="product-order-qty" placeholder="Ex : 10" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="product-note">Note (optionnel)</label>
+                        <input type="text" id="product-note" placeholder="Ex : Stockage frais">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="product-category">Catégorie</label>
@@ -164,13 +237,28 @@
                 <div class="setting-row">
                     <div class="setting-info">
                         <span class="setting-label">Notifications de mise à jour</span>
-                        <span class="setting-desc">Afficher les nouveautés après chaque mise à jour de l'application</span>
+                        <span class="setting-desc">Afficher les nouveautés après chaque mise à jour</span>
                     </div>
                     <label class="toggle-switch">
                         <input type="checkbox" id="setting-update-notif" checked>
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
+
+                <div class="setting-section-title"><i class="fa-solid fa-cart-shopping"></i> Commandes Pennylane</div>
+
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-label">Commande automatique</span>
+                        <span class="setting-desc">Créer automatiquement une commande quand le stock est faible (sans doublons)</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="setting-auto-order">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div id="pennylane-settings-status" style="margin-top: 8px;"></div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-primary modal-close">Fermer</button>

@@ -1,5 +1,5 @@
 /* =============================================
-   Poulstock — main.js
+   PharmaStock — main.js
    Rendu dynamique via API Flask + SQLite
    ============================================= */
 
@@ -25,10 +25,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ——— État ———
     let DB = [];                    // Données chargées depuis l'API
+    let ORDERS = [];                // Commandes chargées depuis l'API
+    let pennylaneConfigured = false;
     let deleteCallback = null;      // Callback pour la suppression confirmée
     let editingProductId = null;    // ID du produit en cours d'édition (null = ajout)
     let editingProductCurrentQty = null; // Qté actuelle du produit en cours d'édition
     let editingCategoryId = null;   // ID de la catégorie en cours d'édition (null = ajout)
+    let pendingOrderProduct = null; // Produit cible de la modale de commande
 
     /* ===========================================
        HELPERS — Utilitaires
@@ -70,11 +73,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadData() {
         DB = await api('/api/data');
-        // Tri alphabétique des catégories par défaut, sauf si l'utilisateur a défini un ordre custom
         if (!localStorage.getItem('categories_custom_ordered')) {
             DB.sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true, sensitivity: 'base' }));
         }
         render();
+        await loadOrders();
+    }
+
+    async function loadOrders() {
+        const [orders, status] = await Promise.all([
+            api('/api/orders'),
+            api('/api/orders/pennylane/status'),
+        ]);
+        ORDERS = orders;
+        pennylaneConfigured = status.configured;
+        updateOrdersBadge();
     }
 
     /* ===========================================
@@ -95,6 +108,15 @@ document.addEventListener('DOMContentLoaded', () => {
         updateAddProductButton();
     }
 
+    function updateOrdersBadge() {
+        const pending = ORDERS.filter(o => o.status === 'en_attente').length;
+        const badge = document.getElementById('orders-badge');
+        if (badge) {
+            badge.textContent = pending;
+            badge.style.display = pending > 0 ? '' : 'none';
+        }
+    }
+
     function updateAddProductButton() {
         const hasCategories = DB.length > 0;
         if (btnAddProduct) {
@@ -106,6 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSidebarNav() {
         const existingDynamic = sidebarNav.querySelectorAll('.nav-item[data-target]:not([data-target="all"])');
         existingDynamic.forEach(el => el.remove());
+        // Repositionner #btn-orders après les catégories dynamiques (il sera déplacé plus bas)
+        const ordersBtn = document.getElementById('btn-orders');
         
         const oldAddBtn = sidebarNav.querySelector('#btn-add-category');
         if (oldAddBtn) oldAddBtn.remove();
@@ -366,6 +390,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('product-qty-label').textContent = `Qté à ajouter (actuel : ${product.qty ?? '?'}${product.unit ? ' ' + product.unit : ''})`;
             document.getElementById('product-unit').value = product.unit || '';
             document.getElementById('product-note').value = product.note || '';
+            document.getElementById('product-supplier').value = product.supplier || '';
+            document.getElementById('product-reference').value = product.reference || '';
+            document.getElementById('product-order-qty').value = product.order_qty ?? 1;
             document.getElementById('product-category').value = category.id;
             document.getElementById('modal-product-delete-row').style.display = '';
             document.getElementById('product-qty-remove-row').style.display = '';
@@ -536,6 +563,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('product-qty').value = '';
         document.getElementById('product-unit').value = '';
         document.getElementById('product-note').value = '';
+        document.getElementById('product-supplier').value = '';
+        document.getElementById('product-reference').value = '';
+        document.getElementById('product-order-qty').value = '1';
         document.getElementById('modal-product-delete-row').style.display = 'none';
         document.getElementById('product-qty-remove-row').style.display = 'none';
         document.getElementById('product-qty-remove').value = '';
@@ -595,35 +625,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const qtyRemove = document.getElementById('product-qty-remove').value.trim();
         const unit      = document.getElementById('product-unit').value.trim();
         const note      = document.getElementById('product-note').value.trim();
+        const supplier  = document.getElementById('product-supplier').value.trim();
+        const reference = document.getElementById('product-reference').value.trim();
+        const orderQty  = parseInt(document.getElementById('product-order-qty').value) || 1;
         const catId     = document.getElementById('product-category').value;
 
         if (!name) return;
 
         if (editingProductId) {
-            // Mode édition → PUT (ajout et/ou retrait de stock)
             const addedQty   = qty !== '' ? parseInt(qty) : 0;
             const removedQty = qtyRemove !== '' ? parseInt(qtyRemove) : 0;
             const newQty = Math.max(0, editingProductCurrentQty + addedQty - removedQty);
             await api(`/api/products/${editingProductId}`, {
                 method: 'PUT',
                 body: {
-                    name: name,
-                    qty: newQty,
-                    unit: unit,
-                    note: note,
-                    category_id: parseInt(catId),
+                    name, qty: newQty, unit, note, supplier, reference,
+                    order_qty: orderQty, category_id: parseInt(catId),
                 }
             });
         } else {
-            // Mode ajout → POST
             await api('/api/products', {
                 method: 'POST',
                 body: {
-                    category_id: catId,
-                    name: name,
+                    category_id: catId, name,
                     qty: qty ? parseInt(qty) : null,
-                    unit: unit,
-                    note: note,
+                    unit, note, supplier, reference, order_qty: orderQty,
                 }
             });
         }
@@ -812,6 +838,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${group.products.map(p => {
                     const isUnknown = p.qty === null;
                     const t = p.low_stock_threshold ?? 5;
+                    const hasPending = ORDERS.some(o => o.product_id === p.id && o.status === 'en_attente');
                     return `
                         <div class="alert-item ${isUnknown ? 'unknown' : ''}">
                             <div class="alert-item-info">
@@ -823,12 +850,27 @@ document.addEventListener('DOMContentLoaded', () => {
                                     }
                                 </div>
                             </div>
-                            <span style="font-size:0.65rem; color:var(--color-text-muted)">min. : ${t}</span>
+                            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+                                <span style="font-size:0.65rem; color:var(--color-text-muted)">min. : ${t}</span>
+                                ${hasPending
+                                    ? `<span class="order-auto-badge"><i class="fa-solid fa-clock"></i> En attente</span>`
+                                    : `<button class="btn-order" data-product-id="${p.id}"><i class="fa-solid fa-cart-plus"></i> Commander</button>`
+                                }
+                            </div>
                         </div>
                     `;
                 }).join('')}
             </div>
         `).join('');
+
+        // Liaison des boutons Commander
+        alertsPanelBody.querySelectorAll('.btn-order').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const productId = btn.dataset.productId;
+                const product = DB.flatMap(c => c.products).find(p => p.id === productId);
+                if (product) openOrderModal(product);
+            });
+        });
     }
 
     function openAlertsPanel() {
@@ -844,17 +886,209 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.overflow = '';
     }
 
-    // Ouvrir / fermer le panneau
     btnAlerts?.addEventListener('click', () => openAlertsPanel());
     document.getElementById('alerts-panel-close')?.addEventListener('click', () => closeAlertsPanel());
     alertsOverlay?.addEventListener('click', () => closeAlertsPanel());
 
-    // Fermer le panneau avec Escape
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && alertsPanel?.classList.contains('is-open')) {
             closeAlertsPanel();
         }
     });
+
+    /* ===========================================
+       PANNEAU COMMANDES
+    =========================================== */
+
+    const ordersPanel  = document.getElementById('orders-panel');
+    const ordersOverlay = document.getElementById('orders-overlay');
+    const ordersPanelBody = document.getElementById('orders-panel-body');
+
+    const ORDER_STATUSES = {
+        en_attente: { label: 'En attente', color: 'var(--color-warning)' },
+        envoyee:    { label: 'Envoyée',    color: '#1a6bb5' },
+        recue:      { label: 'Reçue',      color: 'var(--color-success)' },
+        annulee:    { label: 'Annulée',    color: 'var(--color-text-muted)' },
+    };
+
+    function formatDate(iso) {
+        if (!iso) return '';
+        const d = new Date(iso);
+        return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    function renderOrdersPanel() {
+        const statusBar = document.getElementById('pennylane-status-bar');
+        if (statusBar) {
+            statusBar.style.display = '';
+            statusBar.innerHTML = pennylaneConfigured
+                ? `<div class="pennylane-status configured"><i class="fa-solid fa-plug"></i> Pennylane connecté — envoi automatique activé</div>`
+                : `<div class="pennylane-status not-configured"><i class="fa-solid fa-plug-circle-xmark"></i> Pennylane non configuré (PENNYLANE_API_KEY manquante)</div>`;
+        }
+
+        if (ORDERS.length === 0) {
+            ordersPanelBody.innerHTML = `
+                <div class="alerts-empty">
+                    <i class="fa-solid fa-inbox"></i>
+                    <p>Aucune commande enregistrée</p>
+                </div>`;
+            return;
+        }
+
+        const groups = {};
+        ['en_attente', 'envoyee', 'recue', 'annulee'].forEach(s => { groups[s] = []; });
+        ORDERS.forEach(o => { if (groups[o.status]) groups[o.status].push(o); });
+
+        ordersPanelBody.innerHTML = '';
+
+        Object.entries(groups).forEach(([status, orders]) => {
+            if (orders.length === 0) return;
+            const info = ORDER_STATUSES[status];
+            const group = document.createElement('div');
+            group.className = 'order-group';
+            group.innerHTML = `<div class="order-group-title" style="color:${info.color}"><i class="fa-solid fa-circle" style="font-size:0.5rem"></i>${info.label} (${orders.length})</div>`;
+
+            orders.forEach(o => {
+                const item = document.createElement('div');
+                item.className = 'order-item';
+                item.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                        <div>
+                            <div class="order-item-name">${o.product_name}</div>
+                            <div class="order-item-meta">
+                                Qté : <strong>${o.quantity}</strong>
+                                ${o.supplier ? ` · ${o.supplier}` : ''}
+                                · ${formatDate(o.created_at)}
+                            </div>
+                            ${o.notes ? `<div class="order-item-meta" style="font-style:italic">${o.notes}</div>` : ''}
+                            ${o.auto_triggered ? `<span class="order-auto-badge"><i class="fa-solid fa-robot"></i> Auto</span>` : ''}
+                            ${o.pennylane_order_id ? `<div class="order-pennylane-badge"><i class="fa-solid fa-check"></i> Pennylane #${o.pennylane_order_id}</div>` : ''}
+                        </div>
+                    </div>
+                    <div class="order-item-actions">
+                        ${status === 'en_attente' ? `<button class="btn-status success" data-id="${o.id}" data-action="envoyee">Marquer envoyée</button>` : ''}
+                        ${status === 'envoyee' ? `<button class="btn-status success" data-id="${o.id}" data-action="recue">Marquer reçue</button>` : ''}
+                        ${status !== 'annulee' && status !== 'recue' ? `<button class="btn-status danger" data-id="${o.id}" data-action="annulee">Annuler</button>` : ''}
+                        <button class="btn-status" data-id="${o.id}" data-action="delete" style="border-color:var(--color-danger);color:var(--color-danger)"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+                group.appendChild(item);
+            });
+
+            ordersPanelBody.appendChild(group);
+        });
+
+        // Délégation événements
+        ordersPanelBody.querySelectorAll('[data-action]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const { id, action } = btn.dataset;
+                if (action === 'delete') {
+                    await api(`/api/orders/${id}`, { method: 'DELETE' });
+                } else {
+                    await api(`/api/orders/${id}`, { method: 'PUT', body: { status: action } });
+                }
+                await loadOrders();
+                renderOrdersPanel();
+            });
+        });
+    }
+
+    function openOrdersPanel() {
+        renderOrdersPanel();
+        ordersPanel?.classList.add('is-open');
+        ordersOverlay?.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeOrdersPanel() {
+        ordersPanel?.classList.remove('is-open');
+        ordersOverlay?.classList.remove('is-open');
+        document.body.style.overflow = '';
+    }
+
+    document.getElementById('orders-panel-close')?.addEventListener('click', () => closeOrdersPanel());
+    ordersOverlay?.addEventListener('click', () => closeOrdersPanel());
+    document.getElementById('btn-orders')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (window.innerWidth <= 768) sidebar.classList.remove('is-open');
+        openOrdersPanel();
+    });
+
+    /* ===========================================
+       MODAL COMMANDE
+    =========================================== */
+
+    const modalOrder = document.getElementById('modal-order');
+
+    function openOrderModal(product) {
+        pendingOrderProduct = product;
+        document.getElementById('order-product-name').value = product.name;
+        document.getElementById('order-quantity').value = product.order_qty ?? 1;
+        document.getElementById('order-supplier').value = product.supplier || '';
+        document.getElementById('order-notes').value = '';
+        const infoEl = document.getElementById('order-pennylane-info');
+        if (infoEl) infoEl.style.display = pennylaneConfigured ? '' : 'none';
+        openModal(modalOrder);
+    }
+
+    document.getElementById('btn-confirm-order')?.addEventListener('click', async () => {
+        if (!pendingOrderProduct) return;
+        const quantity = parseInt(document.getElementById('order-quantity').value) || 1;
+        const supplier = document.getElementById('order-supplier').value.trim();
+        const notes    = document.getElementById('order-notes').value.trim();
+
+        await api('/api/orders', {
+            method: 'POST',
+            body: {
+                product_id: pendingOrderProduct.id,
+                product_name: pendingOrderProduct.name,
+                supplier: supplier || pendingOrderProduct.supplier || '',
+                quantity,
+                notes,
+                auto_triggered: false,
+            }
+        });
+
+        pendingOrderProduct = null;
+        closeModal(modalOrder);
+        closeAlertsPanel();
+        await loadOrders();
+        openOrdersPanel();
+    });
+
+    /* ===========================================
+       AUTO-COMMANDE (déclenchée au chargement si activée)
+    =========================================== */
+
+    async function checkAutoOrders() {
+        const settings = loadSettings();
+        if (!settings.auto_order) return;
+
+        const lowProducts = DB.flatMap(c => c.products).filter(p => {
+            const t = p.low_stock_threshold ?? 5;
+            return p.qty === null || p.qty <= t;
+        });
+
+        let created = 0;
+        for (const p of lowProducts) {
+            const hasPending = ORDERS.some(o => o.product_id === p.id && o.status === 'en_attente');
+            if (!hasPending) {
+                await api('/api/orders', {
+                    method: 'POST',
+                    body: {
+                        product_id: p.id,
+                        product_name: p.name,
+                        supplier: p.supplier || '',
+                        quantity: p.order_qty ?? 1,
+                        notes: '',
+                        auto_triggered: true,
+                    }
+                });
+                created++;
+            }
+        }
+        if (created > 0) await loadOrders();
+    }
 
 
     /* ===========================================
@@ -939,9 +1173,10 @@ document.addEventListener('DOMContentLoaded', () => {
        PARAMÈTRES
     =========================================== */
 
-    const SETTINGS_KEY = 'poulstock_settings';
+    const SETTINGS_KEY = 'pharmastock_settings';
     const modalSettings = document.getElementById('modal-settings');
     const settingUpdateNotif = document.getElementById('setting-update-notif');
+    const settingAutoOrder   = document.getElementById('setting-auto-order');
 
     function loadSettings() {
         try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch (_) { return {}; }
@@ -955,12 +1190,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initSettings() {
         const settings = loadSettings();
-        const updateNotif = settings.update_notif !== false;
-        settingUpdateNotif.checked = updateNotif;
+        settingUpdateNotif.checked = settings.update_notif !== false;
+        if (settingAutoOrder) settingAutoOrder.checked = !!settings.auto_order;
+
+        const statusEl = document.getElementById('pennylane-settings-status');
+        if (statusEl) {
+            statusEl.innerHTML = pennylaneConfigured
+                ? `<div class="pennylane-status configured"><i class="fa-solid fa-plug"></i> Pennylane connecté</div>`
+                : `<div class="pennylane-status not-configured"><i class="fa-solid fa-plug-circle-xmark"></i> Pennylane non configuré — ajoutez <code>PENNYLANE_API_KEY</code> dans votre .env</div>`;
+        }
     }
 
     settingUpdateNotif?.addEventListener('change', () => {
         saveSetting('update_notif', settingUpdateNotif.checked);
+    });
+
+    settingAutoOrder?.addEventListener('change', () => {
+        saveSetting('auto_order', settingAutoOrder.checked);
     });
 
     document.getElementById('btn-settings')?.addEventListener('click', (e) => {
@@ -988,16 +1234,16 @@ document.addEventListener('DOMContentLoaded', () => {
             ]);
 
             const currentSha = versionData.sha;
-            const storedSha = localStorage.getItem('poulstock_sha');
+            const storedSha = localStorage.getItem('pharmastock_sha');
 
             if (!storedSha) {
-                localStorage.setItem('poulstock_sha', currentSha);
+                localStorage.setItem('pharmastock_sha', currentSha);
                 return;
             }
 
             if (storedSha === currentSha) return;
 
-            localStorage.setItem('poulstock_sha', currentSha);
+            localStorage.setItem('pharmastock_sha', currentSha);
 
             if (!changelog || changelog.length === 0) return;
 
@@ -1015,10 +1261,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /* ===========================================
-       INIT — Charger les données depuis l'API
+       INIT
     =========================================== */
 
-    loadData();
-    checkForUpdate();
+    async function init() {
+        await loadData();
+        checkForUpdate();
+        await checkAutoOrders();
+    }
+
+    init();
 
 });

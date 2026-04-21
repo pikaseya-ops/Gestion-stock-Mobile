@@ -13,5 +13,8 @@ class Product(db.Model):
     grp = db.Column(db.String, default="")
     low_stock_threshold = db.Column(db.Integer, default=5)
     low_stock_alert_sent = db.Column(db.Boolean, default=False)
+    supplier = db.Column(db.String, default="")
+    reference = db.Column(db.String, default="")
+    order_qty = db.Column(db.Integer, default=1)
 
     category = db.relationship("Category", back_populates="products")
