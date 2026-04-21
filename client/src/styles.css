@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Print styles */
+@media print {
+  .no-print { display: none !important; }
+  .print-full { position: absolute; inset: 0; background: white; padding: 0; margin: 0; }
+  body { background: white !important; }
+}
+
+/* Scrollbar fine */
+.scrollbar-thin::-webkit-scrollbar { height: 8px; width: 8px; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }

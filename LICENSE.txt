@@ -1,0 +1,6 @@
+Planning Pharmacie
+
+Cette application est destinée à un usage privé en officine de pharmacie.
+
+Tous droits réservés.
+La redistribution sans autorisation est interdite.
