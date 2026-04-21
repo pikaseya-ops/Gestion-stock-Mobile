@@ -1,0 +1,96 @@
+name: Build installers
+
+# Se déclenche :
+# - automatiquement à chaque tag git "v*" (ex. v1.0.0) → publie une release GitHub
+# - manuellement via le bouton "Run workflow" sur GitHub → pas de release, juste les artefacts
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write   # nécessaire pour créer une Release
+
+jobs:
+  build:
+    strategy:
+      # Ne pas annuler les autres jobs si un échoue (utile pour débogage)
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: Windows
+            artifact: PlanningPharmacie-Setup-*.exe
+          - os: macos-latest
+            name: macOS (Intel + Apple Silicon)
+            artifact: PlanningPharmacie-*.dmg
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build front-end (Vite)
+        run: npm run client:build
+
+      - name: Build installer (electron-builder)
+        env:
+          # GitHub token pour que electron-builder puisse uploader vers les Releases
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Pas de code signing pour l'instant (nécessite un certificat payant)
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: |
+          npm run electron:build -- --publish=never
+
+      - name: Upload artifact (workflow manuel)
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.os }}
+          path: dist-installer/${{ matrix.artifact }}
+          if-no-files-found: error
+          retention-days: 30
+
+  # Job final : crée une Release GitHub avec tous les installateurs attachés
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: List artifacts
+        run: ls -la ./artifacts/**/*
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./artifacts/**/*
+          body: |
+            ## Installateurs Planning Pharmacie ${{ github.ref_name }}
+
+            Téléchargez l'installateur correspondant à votre système :
+
+            - **Windows** : `PlanningPharmacie-Setup-*.exe`
+              → double-clic puis suivre l'assistant
+            - **macOS Intel / Apple Silicon** : `PlanningPharmacie-*.dmg`
+              → ouvrir le .dmg et glisser l'icône dans Applications
+
+            _Au premier lancement, Windows et macOS afficheront un avertissement
+            (l'app n'est pas signée par un éditeur commercial). Voir le guide
+            d'installation dans le dépôt._
+          draft: false
+          prerelease: false

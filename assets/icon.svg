@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Fond dégradé vert pharmacie -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+
+  <!-- Croix pharmacie blanche, centrée -->
+  <g fill="#ffffff">
+    <rect x="208" y="112" width="96" height="288" rx="24"/>
+    <rect x="112" y="208" width="288" height="96" rx="24"/>
+  </g>
+
+  <!-- Petit "check" discret en bas à droite pour évoquer le planning -->
+  <g transform="translate(350, 350)" fill="none" stroke="#059669" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="48" cy="48" r="54" fill="#ffffff" stroke="#ffffff" stroke-width="0"/>
+    <polyline points="26,50 42,66 72,34"/>
+  </g>
+</svg>
