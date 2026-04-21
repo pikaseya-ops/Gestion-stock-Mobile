@@ -1,0 +1,10 @@
+[
+    {
+        "date": "25/03/2026",
+        "changes": [
+            "Ajout du système de changelog avec détection automatique des mises à jour",
+            "Ajout fonctionnel des paramètres",
+            "Ajout d'un paramètres permettant de ne pas afficher les notifications de mise à jour"
+        ]
+    }
+]
