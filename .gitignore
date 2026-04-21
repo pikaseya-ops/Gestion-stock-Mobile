@@ -1,8 +1,36 @@
-node_modules/
-client/dist/
-dist-installer/
-data/
-*.log
-.DS_Store
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtualenv
+venv/
+ENV/
 .env
-.env.local
+.venv
+
+# VSCode
+.vscode/
+
+# Mac
+.DS_Store
+
+# PyCharm
+.idea/
+
+# Logs
+*.log
+
+# Test
+htmlcov/
+.coverage
+
+# Flask instance folder
+instance/ 
+
+# Stock.db
+stock.db
+
+# cloudflared
+cloudflared.exe
